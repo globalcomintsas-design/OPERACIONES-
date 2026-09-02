@@ -24,31 +24,34 @@ body{font-family:'DM Sans',sans-serif;background:#f0f4f8;min-height:100vh;color:
 .login-error{color:#dc2626;font-size:12px;margin-top:8px;text-align:center;display:none;}
 
 /* APP */
-.topbar{background:#1e3a8a;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
-.topbar-brand{color:#fff;font-weight:700;font-size:16px;}
-.topbar-sub{color:#93c5fd;font-size:12px;}
-.logout-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;}
+.topbar{background:#1e3a8a;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-brand{color:#fff;font-weight:700;font-size:14px;}
+.topbar-sub{color:#93c5fd;font-size:11px;}
+.logout-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:6px 12px;border-radius:8px;cursor:pointer;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;}
 .logout-btn:hover{background:rgba(255,255,255,0.25);}
 
-.main{max-width:640px;margin:0 auto;padding:20px;}
-.card{background:#fff;border-radius:16px;padding:22px;margin-bottom:16px;border:1px solid #e2e8f0;}
-.card h3{font-size:12px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;}
+.main{max-width:1180px;margin:0 auto;padding:12px;}
+.grid2{display:grid;grid-template-columns:1.15fr 0.85fr;gap:12px;align-items:start;}
+@media(max-width:980px){ .grid2{grid-template-columns:1fr;} }
 
-.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
-.form-group label{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.3px;}
-.form-group input, .form-group select, .form-group textarea{padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1e293b;outline:none;}
+.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #e2e8f0;}
+.card h3{font-size:11px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px;}
+
+.form-group{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
+.form-group label{font-size:10.5px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.3px;}
+.form-group input, .form-group select, .form-group textarea{padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:#1e293b;outline:none;}
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus{border-color:#1e3a8a;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 @media(max-width:520px){ .form-row{grid-template-columns:1fr;} }
 
-.chk-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
-.chk-item{display:flex;align-items:center;gap:7px;background:#f8fafc;border-radius:8px;padding:9px 10px;cursor:pointer;border:1.5px solid transparent;}
+.chk-group{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.chk-item{display:flex;align-items:center;gap:6px;background:#f8fafc;border-radius:7px;padding:6px 8px;cursor:pointer;border:1.5px solid transparent;}
 .chk-item.checked{border-color:#1e3a8a;background:#eff6ff;}
-.chk-item input[type=checkbox]{accent-color:#1e3a8a;width:15px;height:15px;}
-.chk-item label{font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;}
-.chk-item .chk-extra{width:50px;border:1px solid #e2e8f0;border-radius:5px;padding:3px 5px;font-size:12px;font-family:'DM Sans',sans-serif;text-align:right;margin-left:auto;}
+.chk-item input[type=checkbox]{accent-color:#1e3a8a;width:14px;height:14px;}
+.chk-item label{font-size:11.5px;font-weight:600;color:#334155;cursor:pointer;}
+.chk-item .chk-extra{width:44px;border:1px solid #e2e8f0;border-radius:5px;padding:2px 4px;font-size:11px;font-family:'DM Sans',sans-serif;text-align:right;margin-left:auto;}
 
-.btn-primary{width:100%;background:#1e3a8a;color:#fff;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-primary{width:100%;background:#1e3a8a;color:#fff;border:none;padding:11px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-primary:hover{background:#1e40af;}
 .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
 
@@ -56,30 +59,37 @@ body{font-family:'DM Sans',sans-serif;background:#f0f4f8;min-height:100vh;color:
 .toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
 .toast.error{background:#dc2626;}
 
-.hint{font-size:11px;color:#94a3b8;margin-top:-8px;margin-bottom:14px;}
+.hint{font-size:10px;color:#94a3b8;margin-top:-6px;margin-bottom:8px;}
 .spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-.link-btn{background:none;border:none;color:#1e3a8a;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;margin-top:-8px;margin-bottom:12px;text-align:left;}
+.link-btn{background:none;border:none;color:#1e3a8a;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;margin-top:-6px;margin-bottom:8px;text-align:left;}
 .link-btn:hover{text-decoration:underline;}
-.inline-add{display:none;gap:8px;margin-bottom:14px;}
+.inline-add{display:none;gap:8px;margin-bottom:8px;}
 .inline-add.show{display:flex;}
-.inline-add input{flex:1;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;}
-.inline-add button{background:#059669;color:#fff;border:none;padding:0 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+.inline-add input{flex:1;padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:12px;font-family:'DM Sans',sans-serif;}
+.inline-add button{background:#059669;color:#fff;border:none;padding:0 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+
+.card-header-row{display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0;}
+.card-header-row h3{margin-bottom:0;}
+.toggle-arrow{font-size:11px;color:#94a3b8;transition:transform .2s;}
+.toggle-arrow.open{transform:rotate(180deg);}
+.collapsible-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+.collapsible-body.open{max-height:340px;overflow-y:auto;margin-top:10px;}
 
 .tabla-wrap{overflow-x:auto;}
-table.mini{width:100%;border-collapse:collapse;font-size:12px;}
-table.mini thead tr{background:#f0f4f8;}
-table.mini th{padding:8px 8px;text-align:left;font-weight:700;color:#1e3a8a;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
-table.mini td{padding:8px 8px;border-bottom:1px solid #f1f5f9;color:#334155;white-space:nowrap;}
+table.mini{width:100%;border-collapse:collapse;font-size:11.5px;}
+table.mini thead tr{background:#f0f4f8;position:sticky;top:0;}
+table.mini th{padding:6px 7px;text-align:left;font-weight:700;color:#1e3a8a;font-size:10px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+table.mini td{padding:6px 7px;border-bottom:1px solid #f1f5f9;color:#334155;white-space:nowrap;}
 table.mini tr:last-child td{border-bottom:none;}
-.canal-badge{padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;display:inline-block;}
+.canal-badge{padding:2px 7px;border-radius:20px;font-size:10px;font-weight:700;display:inline-block;}
 .canal-V{background:#dcfce7;color:#166534;}
 .canal-N{background:#fef9c3;color:#854d0e;}
 .canal-R{background:#fee2e2;color:#991b1b;}
-.btn-del{background:#fee2e2;color:#991b1b;border:none;padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;}
+.btn-del{background:#fee2e2;color:#991b1b;border:none;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:10.5px;font-weight:700;font-family:'DM Sans',sans-serif;}
 .btn-del:hover{background:#fecaca;}
-.empty-note{color:#94a3b8;font-size:12.5px;text-align:center;padding:16px;}
+.empty-note{color:#94a3b8;font-size:12px;text-align:center;padding:12px;}
 </style>
 </head>
 <body>
@@ -111,139 +121,154 @@ table.mini tr:last-child td{border-bottom:none;}
   </div>
 
   <div class="main">
-    <div class="card">
-      <h3>Datos de la operación</h3>
+    <div class="grid2">
 
-      <div class="form-row">
-        <div class="form-group">
-          <label>Fecha</label>
-          <input type="date" id="op_fecha">
+      <!-- COLUMNA IZQUIERDA: formulario -->
+      <div>
+        <div class="card">
+          <h3>Datos de la operación</h3>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fecha</label>
+              <input type="date" id="op_fecha">
+            </div>
+            <div class="form-group">
+              <label>Tipo de operación</label>
+              <select id="op_tipo" onchange="onTipoChange()">
+                <option value="EXPO">EXPO</option>
+                <option value="IMPO">IMPO</option>
+                <option value="TRAN">TRAN</option>
+                <option value="MIC">MIC</option>
+                <option value="MULTINOTA">MULTINOTA</option>
+                <option value="ADICIONALES">ADICIONALES</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Despachante</label>
+              <input type="text" id="op_despachante" list="dl_despachantes" placeholder="Escribí o elegí" onchange="onCambiarDespachante()">
+              <datalist id="dl_despachantes"></datalist>
+            </div>
+            <div class="form-group">
+              <label>Cliente final</label>
+              <input type="text" id="op_cliente" list="dl_clientes" placeholder="Nombre del cliente">
+              <datalist id="dl_clientes"></datalist>
+            </div>
+          </div>
+          <button type="button" class="link-btn" id="btnToggleNuevoCliente" onclick="toggleNuevoCliente()">+ Agregar cliente nuevo</button>
+          <div class="inline-add" id="wrapNuevoCliente">
+            <input type="text" id="inp_nuevo_cliente" placeholder="Nombre del cliente nuevo" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarClienteNuevo();}">
+            <button type="button" onclick="guardarClienteNuevo()">Guardar</button>
+          </div>
+
+          <div class="form-row" id="destinacion-canal-row">
+            <div class="form-group" id="destinacion-group">
+              <label>Destinación / permiso</label>
+              <input type="text" id="op_destinacion" placeholder="Ej: 22001EC01...">
+            </div>
+            <div class="form-group" id="canal-group">
+              <label>Canal</label>
+              <select id="op_canal">
+                <option value="V">Verde (V)</option>
+                <option value="N">Naranja (N)</option>
+                <option value="R">Rojo (R)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>ZPA</label>
+              <input type="text" id="op_zpa" placeholder="Opcional">
+            </div>
+            <div class="form-group" id="mic-group">
+              <label>N° MIC</label>
+              <input type="text" id="op_mic" placeholder="Opcional">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>N° de toma / referencia</label>
+              <input type="text" id="op_toma" placeholder="Opcional">
+            </div>
+            <div class="form-group" id="tc-group">
+              <label>Tipo de cambio del día</label>
+              <input type="number" id="op_tc" step="0.01" placeholder="Ej: 1440">
+            </div>
+          </div>
+          <div class="hint" id="tc-hint">TC obligatorio salvo despachante con tarifa en pesos.</div>
+
+          <div class="form-group">
+            <label>Período de factura</label>
+            <select id="op_periodo_factura">
+              <option value="diario">Diario</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensual" selected>Mensual</option>
+            </select>
+          </div>
         </div>
-        <div class="form-group">
-          <label>Tipo de operación</label>
-          <select id="op_tipo" onchange="onTipoChange()">
-            <option value="EXPO">EXPO</option>
-            <option value="IMPO">IMPO</option>
-            <option value="TRAN">TRAN</option>
-            <option value="MIC">MIC</option>
-            <option value="MULTINOTA">MULTINOTA</option>
-            <option value="ADICIONALES">ADICIONALES</option>
-          </select>
+
+        <div class="card">
+          <h3>Adicionales</h3>
+          <div class="chk-group">
+            <div class="chk-item" id="wrap_sobre"><input type="checkbox" id="chk_sobre"><label for="chk_sobre">Armado de sobre</label></div>
+            <div class="chk-item" id="wrap_cam"><input type="checkbox" id="chk_cam"><label for="chk_cam">Camión AD</label><input type="number" id="n_cam" class="chk-extra" value="1" min="1"></div>
+            <div class="chk-item" id="wrap_senasa_p"><input type="checkbox" id="chk_senasa_p"><label for="chk_senasa_p">SENASA embalaje</label><input type="number" id="n_senasa_p" class="chk-extra" value="1" min="1"></div>
+            <div class="chk-item" id="wrap_senasa_prod"><input type="checkbox" id="chk_senasa_prod"><label for="chk_senasa_prod">SENASA producto</label></div>
+            <div class="chk-item"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
+            <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas adic. MIC</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
+            <div class="chk-item"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
+            <div class="chk-item"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
+          </div>
+
+          <div class="form-row" style="margin-top:10px;">
+            <div class="form-group">
+              <label>Adicional en pesos ($)</label>
+              <input type="number" id="op_adicionales_pesos" step="0.01" value="0">
+            </div>
+            <div class="form-group">
+              <label>Adicional en USD</label>
+              <input type="number" id="op_adicionales_usd" step="0.01" value="0">
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Observaciones</label>
+            <textarea id="op_obs" rows="1" placeholder="Opcional"></textarea>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="btnGuardar" onclick="guardarOperacion()">Guardar operación</button>
+      </div>
+
+      <!-- COLUMNA DERECHA: listado plegable -->
+      <div>
+        <div class="card">
+          <div class="card-header-row" onclick="toggleCargas()">
+            <h3>Tus cargas recientes</h3>
+            <span class="toggle-arrow" id="cargasArrow">▾</span>
+          </div>
+          <div class="collapsible-body" id="cargasBody">
+            <div class="tabla-wrap">
+              <table class="mini">
+                <thead>
+                  <tr><th>Fecha</th><th>Despachante</th><th>Cliente</th><th>Destinación</th><th>Tipo</th><th>Canal</th><th></th></tr>
+                </thead>
+                <tbody id="tbody-mis-cargas">
+                  <tr><td colspan="7" class="empty-note">Cargando...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="form-group">
-        <label>Despachante</label>
-        <input type="text" id="op_despachante" list="dl_despachantes" placeholder="Escribí o elegí de la lista" onchange="onCambiarDespachante()">
-        <datalist id="dl_despachantes"></datalist>
-      </div>
-
-      <div class="form-group" style="margin-bottom:6px;">
-        <label>Cliente final</label>
-        <input type="text" id="op_cliente" list="dl_clientes" placeholder="Nombre del cliente">
-        <datalist id="dl_clientes"></datalist>
-      </div>
-      <button type="button" class="link-btn" id="btnToggleNuevoCliente" onclick="toggleNuevoCliente()">+ Agregar cliente nuevo</button>
-      <div class="inline-add" id="wrapNuevoCliente">
-        <input type="text" id="inp_nuevo_cliente" placeholder="Nombre del cliente nuevo" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarClienteNuevo();}">
-        <button type="button" onclick="guardarClienteNuevo()">Guardar</button>
-      </div>
-
-      <div class="form-row" id="destinacion-canal-row">
-        <div class="form-group" id="destinacion-group">
-          <label>Destinación / permiso</label>
-          <input type="text" id="op_destinacion" placeholder="Ej: 22001EC01...">
-        </div>
-        <div class="form-group" id="canal-group">
-          <label>Canal</label>
-          <select id="op_canal">
-            <option value="V">Verde (V)</option>
-            <option value="N">Naranja (N)</option>
-            <option value="R">Rojo (R)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>ZPA</label>
-          <input type="text" id="op_zpa" placeholder="Opcional">
-        </div>
-        <div class="form-group" id="mic-group">
-          <label>N° MIC</label>
-          <input type="text" id="op_mic" placeholder="Opcional">
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label>N° de toma / referencia</label>
-        <input type="text" id="op_toma" placeholder="Opcional">
-      </div>
-
-      <div class="form-group" id="tc-group">
-        <label>Tipo de cambio del día</label>
-        <input type="number" id="op_tc" step="0.01" placeholder="Ej: 1440">
-      </div>
-      <div class="hint" id="tc-hint">Obligatorio salvo que el despachante tenga tarifa en pesos.</div>
-
-      <div class="form-group">
-        <label>Período de factura</label>
-        <select id="op_periodo_factura">
-          <option value="diario">Diario</option>
-          <option value="semanal">Semanal</option>
-          <option value="mensual" selected>Mensual</option>
-        </select>
-      </div>
     </div>
-
-    <div class="card">
-      <h3>Adicionales</h3>
-      <div class="chk-group">
-        <div class="chk-item" id="wrap_sobre"><input type="checkbox" id="chk_sobre"><label for="chk_sobre">Armado de sobre</label></div>
-        <div class="chk-item" id="wrap_cam"><input type="checkbox" id="chk_cam"><label for="chk_cam">Camión AD</label><input type="number" id="n_cam" class="chk-extra" value="1" min="1"></div>
-        <div class="chk-item" id="wrap_senasa_p"><input type="checkbox" id="chk_senasa_p"><label for="chk_senasa_p">SENASA embalaje</label><input type="number" id="n_senasa_p" class="chk-extra" value="1" min="1"></div>
-        <div class="chk-item" id="wrap_senasa_prod"><input type="checkbox" id="chk_senasa_prod"><label for="chk_senasa_prod">SENASA producto</label></div>
-        <div class="chk-item"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
-        <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas adicionales MIC</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
-        <div class="chk-item"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
-        <div class="chk-item"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
-      </div>
-
-      <div class="form-row" style="margin-top:14px;">
-        <div class="form-group">
-          <label>Adicional en pesos ($)</label>
-          <input type="number" id="op_adicionales_pesos" step="0.01" value="0">
-        </div>
-        <div class="form-group">
-          <label>Adicional en USD</label>
-          <input type="number" id="op_adicionales_usd" step="0.01" value="0">
-        </div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Observaciones</h3>
-      <div class="form-group" style="margin-bottom:0;">
-        <textarea id="op_obs" rows="2" placeholder="Opcional"></textarea>
-      </div>
-    </div>
-
-    <button class="btn-primary" id="btnGuardar" onclick="guardarOperacion()">Guardar operación</button>
-
-    <div class="card" style="margin-top:20px;">
-      <h3>Tus cargas recientes</h3>
-      <div class="tabla-wrap">
-        <table class="mini">
-          <thead>
-            <tr><th>Fecha</th><th>Despachante</th><th>Cliente</th><th>Destinación</th><th>Tipo</th><th>Canal</th><th></th></tr>
-          </thead>
-          <tbody id="tbody-mis-cargas">
-            <tr><td colspan="7" class="empty-note">Cargando...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-    <div style="height:30px;"></div>
+    <div style="height:16px;"></div>
   </div>
 </div>
 
@@ -311,9 +336,15 @@ function mostrarApp(){
   iniciarListadoPropio();
 }
 
+window.toggleCargas = function(){
+  const body = document.getElementById('cargasBody');
+  const arrow = document.getElementById('cargasArrow');
+  const open = !body.classList.contains('open');
+  body.classList.toggle('open', open);
+  arrow.classList.toggle('open', open);
+};
+
 // ── Listado de las propias cargas — SOLO campos identificatorios, nunca $ ni TC ──
-// Filtrado por cargadoPor === este usuario, para que cada empleado vea únicamente
-// lo que él mismo cargó (no el resto de las operaciones del sistema).
 function iniciarListadoPropio(){
   const q = query(
     collection(db,'despachantees_ops'),
