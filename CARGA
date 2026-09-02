@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GLOBALCOMINT · Carga de operaciones</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:#f0f4f8;min-height:100vh;color:#1e293b;}
+
+/* LOGIN (idéntico look al del sistema principal) */
+.login-wrap{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;background:linear-gradient(135deg,#1e3a8a,#1e40af);padding:24px;}
+.logo-wrap{text-align:center;margin-bottom:32px;}
+.logo-title{font-size:28px;font-weight:700;color:#fff;letter-spacing:1px;}
+.logo-sub-main{font-size:13px;color:#93c5fd;margin-top:6px;}
+.login-box{background:#fff;padding:36px;border-radius:20px;width:320px;box-shadow:0 20px 60px rgba(0,0,0,0.3);}
+.login-logo{font-size:22px;font-weight:700;color:#1e3a8a;margin-bottom:4px;}
+.login-sub{color:#888;font-size:13px;margin-bottom:20px;}
+.login-box input{width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid #e2e8f0;font-size:14px;font-family:'DM Sans',sans-serif;margin-bottom:12px;outline:none;}
+.login-box input:focus{border-color:#1e3a8a;}
+.login-btn{width:100%;padding:13px;background:#1e3a8a;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.login-btn:hover{background:#1e40af;}
+.login-error{color:#dc2626;font-size:12px;margin-top:8px;text-align:center;display:none;}
+
+/* APP */
+.topbar{background:#1e3a8a;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+.topbar-brand{color:#fff;font-weight:700;font-size:16px;}
+.topbar-sub{color:#93c5fd;font-size:12px;}
+.logout-btn{background:rgba(255,255,255,0.15);border:none;color:#fff;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-family:'DM Sans',sans-serif;font-weight:600;}
+.logout-btn:hover{background:rgba(255,255,255,0.25);}
+
+.main{max-width:640px;margin:0 auto;padding:20px;}
+.card{background:#fff;border-radius:16px;padding:22px;margin-bottom:16px;border:1px solid #e2e8f0;}
+.card h3{font-size:12px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:14px;}
+
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-group label{font-size:12px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.3px;}
+.form-group input, .form-group select, .form-group textarea{padding:11px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:14px;font-family:'DM Sans',sans-serif;color:#1e293b;outline:none;}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus{border-color:#1e3a8a;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:520px){ .form-row{grid-template-columns:1fr;} }
+
+.chk-group{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.chk-item{display:flex;align-items:center;gap:7px;background:#f8fafc;border-radius:8px;padding:9px 10px;cursor:pointer;border:1.5px solid transparent;}
+.chk-item.checked{border-color:#1e3a8a;background:#eff6ff;}
+.chk-item input[type=checkbox]{accent-color:#1e3a8a;width:15px;height:15px;}
+.chk-item label{font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;}
+.chk-item .chk-extra{width:50px;border:1px solid #e2e8f0;border-radius:5px;padding:3px 5px;font-size:12px;font-family:'DM Sans',sans-serif;text-align:right;margin-left:auto;}
+
+.btn-primary{width:100%;background:#1e3a8a;color:#fff;border:none;padding:14px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.btn-primary:hover{background:#1e40af;}
+.btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1e3a8a;color:#fff;padding:12px 22px;border-radius:12px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(0,0,0,0.2);opacity:0;transition:all .3s;z-index:1000;text-align:center;max-width:90%;}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+.toast.error{background:#dc2626;}
+
+.hint{font-size:11px;color:#94a3b8;margin-top:-8px;margin-bottom:14px;}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+.link-btn{background:none;border:none;color:#1e3a8a;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;margin-top:-8px;margin-bottom:12px;text-align:left;}
+.link-btn:hover{text-decoration:underline;}
+.inline-add{display:none;gap:8px;margin-bottom:14px;}
+.inline-add.show{display:flex;}
+.inline-add input{flex:1;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;}
+.inline-add button{background:#059669;color:#fff;border:none;padding:0 16px;border-radius:9px;font-size:13px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;}
+
+.tabla-wrap{overflow-x:auto;}
+table.mini{width:100%;border-collapse:collapse;font-size:12px;}
+table.mini thead tr{background:#f0f4f8;}
+table.mini th{padding:8px 8px;text-align:left;font-weight:700;color:#1e3a8a;font-size:10.5px;text-transform:uppercase;letter-spacing:.3px;white-space:nowrap;}
+table.mini td{padding:8px 8px;border-bottom:1px solid #f1f5f9;color:#334155;white-space:nowrap;}
+table.mini tr:last-child td{border-bottom:none;}
+.canal-badge{padding:2px 8px;border-radius:20px;font-size:10.5px;font-weight:700;display:inline-block;}
+.canal-V{background:#dcfce7;color:#166534;}
+.canal-N{background:#fef9c3;color:#854d0e;}
+.canal-R{background:#fee2e2;color:#991b1b;}
+.btn-del{background:#fee2e2;color:#991b1b;border:none;padding:4px 9px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:700;font-family:'DM Sans',sans-serif;}
+.btn-del:hover{background:#fecaca;}
+.empty-note{color:#94a3b8;font-size:12.5px;text-align:center;padding:16px;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="logo-wrap">
+    <div class="logo-title">GLOBALCOMINT</div>
+    <div class="logo-sub-main">Carga de operaciones · Acceso restringido</div>
+  </div>
+  <div class="login-box">
+    <div class="login-logo">Ingresar</div>
+    <div class="login-sub">Usuario de carga</div>
+    <input type="text" id="inpUsuario" placeholder="Usuario" autocomplete="username"/>
+    <input type="password" id="inpPassword" placeholder="Contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')ingresar()"/>
+    <button class="login-btn" onclick="ingresar()">Ingresar</button>
+    <div class="login-error" id="loginError">Usuario o contraseña incorrectos</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appWrap" style="display:none;">
+  <div class="topbar">
+    <div>
+      <div class="topbar-brand">GLOBALCOMINT</div>
+      <div class="topbar-sub" id="userChip"></div>
+    </div>
+    <button class="logout-btn" onclick="cerrarSesion()">Salir</button>
+  </div>
+
+  <div class="main">
+    <div class="card">
+      <h3>Datos de la operación</h3>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Fecha</label>
+          <input type="date" id="op_fecha">
+        </div>
+        <div class="form-group">
+          <label>Tipo de operación</label>
+          <select id="op_tipo" onchange="onTipoChange()">
+            <option value="EXPO">EXPO</option>
+            <option value="IMPO">IMPO</option>
+            <option value="TRAN">TRAN</option>
+            <option value="MIC">MIC</option>
+            <option value="MULTINOTA">MULTINOTA</option>
+            <option value="ADICIONALES">ADICIONALES</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Despachante</label>
+        <input type="text" id="op_despachante" list="dl_despachantes" placeholder="Escribí o elegí de la lista" onchange="onCambiarDespachante()">
+        <datalist id="dl_despachantes"></datalist>
+      </div>
+
+      <div class="form-group" style="margin-bottom:6px;">
+        <label>Cliente final</label>
+        <input type="text" id="op_cliente" list="dl_clientes" placeholder="Nombre del cliente">
+        <datalist id="dl_clientes"></datalist>
+      </div>
+      <button type="button" class="link-btn" id="btnToggleNuevoCliente" onclick="toggleNuevoCliente()">+ Agregar cliente nuevo</button>
+      <div class="inline-add" id="wrapNuevoCliente">
+        <input type="text" id="inp_nuevo_cliente" placeholder="Nombre del cliente nuevo" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarClienteNuevo();}">
+        <button type="button" onclick="guardarClienteNuevo()">Guardar</button>
+      </div>
+
+      <div class="form-row" id="destinacion-canal-row">
+        <div class="form-group" id="destinacion-group">
+          <label>Destinación / permiso</label>
+          <input type="text" id="op_destinacion" placeholder="Ej: 22001EC01...">
+        </div>
+        <div class="form-group" id="canal-group">
+          <label>Canal</label>
+          <select id="op_canal">
+            <option value="V">Verde (V)</option>
+            <option value="N">Naranja (N)</option>
+            <option value="R">Rojo (R)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>ZPA</label>
+          <input type="text" id="op_zpa" placeholder="Opcional">
+        </div>
+        <div class="form-group" id="mic-group">
+          <label>N° MIC</label>
+          <input type="text" id="op_mic" placeholder="Opcional">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>N° de toma / referencia</label>
+        <input type="text" id="op_toma" placeholder="Opcional">
+      </div>
+
+      <div class="form-group" id="tc-group">
+        <label>Tipo de cambio del día</label>
+        <input type="number" id="op_tc" step="0.01" placeholder="Ej: 1440">
+      </div>
+      <div class="hint" id="tc-hint">Obligatorio salvo que el despachante tenga tarifa en pesos.</div>
+
+      <div class="form-group">
+        <label>Período de factura</label>
+        <select id="op_periodo_factura">
+          <option value="diario">Diario</option>
+          <option value="semanal">Semanal</option>
+          <option value="mensual" selected>Mensual</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Adicionales</h3>
+      <div class="chk-group">
+        <div class="chk-item" id="wrap_sobre"><input type="checkbox" id="chk_sobre"><label for="chk_sobre">Armado de sobre</label></div>
+        <div class="chk-item" id="wrap_cam"><input type="checkbox" id="chk_cam"><label for="chk_cam">Camión AD</label><input type="number" id="n_cam" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item" id="wrap_senasa_p"><input type="checkbox" id="chk_senasa_p"><label for="chk_senasa_p">SENASA embalaje</label><input type="number" id="n_senasa_p" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item" id="wrap_senasa_prod"><input type="checkbox" id="chk_senasa_prod"><label for="chk_senasa_prod">SENASA producto</label></div>
+        <div class="chk-item"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas adicionales MIC</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
+        <div class="chk-item"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
+      </div>
+
+      <div class="form-row" style="margin-top:14px;">
+        <div class="form-group">
+          <label>Adicional en pesos ($)</label>
+          <input type="number" id="op_adicionales_pesos" step="0.01" value="0">
+        </div>
+        <div class="form-group">
+          <label>Adicional en USD</label>
+          <input type="number" id="op_adicionales_usd" step="0.01" value="0">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Observaciones</h3>
+      <div class="form-group" style="margin-bottom:0;">
+        <textarea id="op_obs" rows="2" placeholder="Opcional"></textarea>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btnGuardar" onclick="guardarOperacion()">Guardar operación</button>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>Tus cargas recientes</h3>
+      <div class="tabla-wrap">
+        <table class="mini">
+          <thead>
+            <tr><th>Fecha</th><th>Despachante</th><th>Cliente</th><th>Destinación</th><th>Tipo</th><th>Canal</th><th></th></tr>
+          </thead>
+          <tbody id="tbody-mis-cargas">
+            <tr><td colspan="7" class="empty-note">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div style="height:30px;"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, addDoc, doc, getDoc, setDoc, deleteDoc, onSnapshot,
+  query, where, orderBy, limit, getCountFromServer
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDO5AtG0PZ_Y48MGwmeDPktxTQfvcj9dbc",
+  authDomain: "caja-globalcomint.firebaseapp.com",
+  projectId: "caja-globalcomint",
+  storageBucket: "caja-globalcomint.firebasestorage.app",
+  messagingSenderId: "191266145805",
+  appId: "1:191266145805:web:a4b7e7124e6ad9f8f9b744"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+// ── LOGIN — completamente separado del login del sistema principal.
+// TODO (Bruno): cambiá el usuario/contraseña de ejemplo antes de darle esta
+// página al empleado, o cargá usuarios reales en la colección Firestore
+// 'corresponsales_cargadores' (campos: password, nombre) con setDoc.
+const CARGADORES_DEFAULT = {
+  'cargador1': { password: 'CAMBIAR-ESTA-CLAVE', nombre: 'Empleado de carga' }
+};
+let cargadoresExtra = {};
+onSnapshot(collection(db,'corresponsales_cargadores'), snap => {
+  cargadoresExtra = {};
+  snap.docs.forEach(d => { cargadoresExtra[d.id] = d.data(); });
+});
+function getCargadores(){ return { ...CARGADORES_DEFAULT, ...cargadoresExtra }; }
+
+let currentUser = null;
+const sesion = localStorage.getItem('gc_cargador_user');
+if(sesion){
+  try { currentUser = JSON.parse(sesion); mostrarApp(); } catch(e){ localStorage.removeItem('gc_cargador_user'); }
+}
+
+window.ingresar = function(){
+  const u = document.getElementById('inpUsuario').value.trim();
+  const p = document.getElementById('inpPassword').value;
+  const user = getCargadores()[u];
+  if(user && user.password === p){
+    currentUser = { username: u, nombre: user.nombre || u };
+    localStorage.setItem('gc_cargador_user', JSON.stringify(currentUser));
+    document.getElementById('loginError').style.display = 'none';
+    mostrarApp();
+  } else {
+    document.getElementById('loginError').style.display = 'block';
+  }
+};
+window.cerrarSesion = function(){
+  localStorage.removeItem('gc_cargador_user');
+  location.reload();
+};
+function mostrarApp(){
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('appWrap').style.display = 'block';
+  document.getElementById('userChip').textContent = '👤 ' + currentUser.nombre;
+  iniciarListadoPropio();
+}
+
+// ── Listado de las propias cargas — SOLO campos identificatorios, nunca $ ni TC ──
+// Filtrado por cargadoPor === este usuario, para que cada empleado vea únicamente
+// lo que él mismo cargó (no el resto de las operaciones del sistema).
+function iniciarListadoPropio(){
+  const q = query(
+    collection(db,'despachantees_ops'),
+    where('cargadoPor','==', currentUser.username),
+    orderBy('ts','desc'),
+    limit(50)
+  );
+  onSnapshot(q, snap => {
+    const ops = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderMisCargas(ops);
+  }, err => {
+    console.warn('Error listando cargas propias:', err);
+    document.getElementById('tbody-mis-cargas').innerHTML =
+      '<tr><td colspan="7" class="empty-note">No se pudo cargar el listado</td></tr>';
+  });
+}
+
+function renderMisCargas(ops){
+  const tbody = document.getElementById('tbody-mis-cargas');
+  if(!ops.length){
+    tbody.innerHTML = '<tr><td colspan="7" class="empty-note">Todavía no cargaste ninguna operación</td></tr>';
+    return;
+  }
+  tbody.innerHTML = ops.map(o => `
+    <tr>
+      <td>${o.fecha||''}</td>
+      <td><strong>${o.despachante||''}</strong></td>
+      <td>${o.cliente||'-'}</td>
+      <td>${o.destinacion||'-'}</td>
+      <td>${o.tipo||''}</td>
+      <td>${o.canal ? `<span class="canal-badge canal-${o.canal}">${o.canal}</span>` : '-'}</td>
+      <td><button class="btn-del" onclick="eliminarPropia('${o.id}')">Eliminar</button></td>
+    </tr>
+  `).join('');
+}
+
+window.eliminarPropia = async function(id){
+  if(!confirm('¿Eliminar esta operación cargada por vos?')) return;
+  try {
+    await deleteDoc(doc(db,'despachantees_ops', id));
+    toast('Operación eliminada');
+  } catch(e){
+    toast('❌ Error al eliminar: ' + e.message, true);
+  }
+};
+
+// ── Alta rápida de cliente final (sin necesidad de cargar una operación) ──
+window.toggleNuevoCliente = function(){
+  const wrap = document.getElementById('wrapNuevoCliente');
+  const open = !wrap.classList.contains('show');
+  wrap.classList.toggle('show', open);
+  document.getElementById('btnToggleNuevoCliente').textContent = open ? '– Cancelar' : '+ Agregar cliente nuevo';
+  if(open) document.getElementById('inp_nuevo_cliente').focus();
+};
+
+window.guardarClienteNuevo = async function(){
+  const input = document.getElementById('inp_nuevo_cliente');
+  const nombre = input.value.trim().toUpperCase();
+  if(!nombre){ toast('Ingresá el nombre del cliente', true); return; }
+  const id = nombre.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+  try {
+    await setDoc(doc(db,'corresponsales_clientes_finales', id), { nombre }, { merge:true });
+    input.value = '';
+    document.getElementById('op_cliente').value = nombre;
+    toggleNuevoCliente();
+    toast('✅ Cliente guardado: ' + nombre);
+  } catch(e){
+    toast('❌ Error al guardar el cliente: ' + e.message, true);
+  }
+};
+
+function toast(msg, isError){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+
+// ── Fecha local (Argentina), igual criterio que el sistema principal ──
+function fechaLocalISO(d = new Date()){
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+document.getElementById('op_fecha').value = fechaLocalISO();
+document.getElementById('op_fecha').addEventListener('change', function(){
+  const d = new Date(this.value + 'T12:00:00');
+  document.getElementById('chk_finsem').checked = (d.getDay() === 0 || d.getDay() === 6);
+});
+
+// ── Listas de despachantes / clientes finales (solo nombres, sin datos de plata) ──
+let clientes = []; // corresponsales_clientes: {nombre, tipo, factura, tieneFactura, cuit}
+onSnapshot(collection(db,'corresponsales_clientes'), snap => {
+  clientes = snap.docs.map(d => ({id:d.id, ...d.data()}));
+  const dl = document.getElementById('dl_despachantes');
+  dl.innerHTML = [...new Set(clientes.map(c=>c.nombre))].sort().map(n => `<option value="${n}">`).join('');
+});
+onSnapshot(collection(db,'corresponsales_clientes_finales'), snap => {
+  const nombres = snap.docs.map(d => d.data().nombre).filter(Boolean).sort();
+  document.getElementById('dl_clientes').innerHTML = nombres.map(n => `<option value="${n}">`).join('');
+});
+
+// ── Estado derivado del despachante elegido (tipo de tarifa) ──
+let tipoDespGlobalActual = 'despachante';
+let tieneFactura = true;
+let esApoderadoActual = false;
+let esKotinyaActual = false;
+
+window.onCambiarDespachante = function(){
+  const nombre = document.getElementById('op_despachante').value.trim().toUpperCase();
+  document.getElementById('op_despachante').value = nombre;
+
+  if(nombre.includes('KOTINYA')){
+    tipoDespGlobalActual = 'kotinya';
+    esKotinyaActual = true; esApoderadoActual = false; tieneFactura = true;
+    actualizarVisibilidad();
+    return;
+  }
+  const cli = clientes.find(c => c.nombre === nombre);
+  const tiposValidos = ['desp_externo','apoderado','kotinya','despachante_pesos'];
+  if(cli){
+    tipoDespGlobalActual = tiposValidos.includes(cli.tipo) ? cli.tipo : 'despachante';
+    document.getElementById('op_periodo_factura').value = cli.factura || 'mensual';
+    tieneFactura = cli.tieneFactura !== 'no';
+  } else {
+    tipoDespGlobalActual = 'despachante';
+    tieneFactura = true;
+  }
+  esKotinyaActual   = tipoDespGlobalActual === 'kotinya';
+  esApoderadoActual = tipoDespGlobalActual === 'apoderado';
+  actualizarVisibilidad();
+};
+
+window.onTipoChange = function(){ actualizarVisibilidad(); };
+
+function actualizarVisibilidad(){
+  const tipoOp = document.getElementById('op_tipo').value;
+  const esMIC = tipoOp === 'MIC', esMultinota = tipoOp === 'MULTINOTA', esAdicionales = tipoOp === 'ADICIONALES';
+  const esPesos = tipoDespGlobalActual === 'despachante_pesos';
+
+  document.getElementById('chk_mic').checked = esMIC;
+  document.getElementById('destinacion-group').style.display = esAdicionales ? 'none' : '';
+
+  const sinCanal = esApoderadoActual || esKotinyaActual || esMIC || esMultinota || esAdicionales;
+  document.getElementById('canal-group').style.display = (esAdicionales) ? 'none' : '';
+  document.getElementById('canal-group').style.opacity = sinCanal ? '0.4' : '1';
+  document.getElementById('canal-group').style.pointerEvents = sinCanal ? 'none' : '';
+
+  ['wrap_sobre','wrap_cam','wrap_senasa_p','wrap_senasa_prod'].forEach(id => {
+    document.getElementById(id).style.display = (esMIC || esMultinota || esAdicionales) ? 'none' : '';
+  });
+
+  document.getElementById('tc-group').style.display = esPesos ? 'none' : '';
+  document.getElementById('tc-hint').style.display = esPesos ? 'none' : '';
+}
+actualizarVisibilidad();
+
+document.querySelectorAll('.chk-item input[type=checkbox]').forEach(c => {
+  c.addEventListener('change', () => c.closest('.chk-item')?.classList.toggle('checked', c.checked));
+});
+
+// ── Tarifas: se leen de Firestore (config/tarifas_operaciones) pero NUNCA se muestran ──
+let tarifasConfig = {};
+onSnapshot(doc(db,'config','tarifas_operaciones'), snap => {
+  tarifasConfig = snap.exists() ? snap.data() : {};
+});
+function T(id, def){ const v = parseFloat(tarifasConfig[id]); return isNaN(v) ? def : v; }
+
+// ── Cálculo silencioso (misma lógica que el sistema principal, sin mostrar nada) ──
+function calcularOperacion(){
+  const canal = document.getElementById('op_canal').value;
+  const tipoOp = document.getElementById('op_tipo').value;
+  const esMIC = tipoOp === 'MIC', esMultinota = tipoOp === 'MULTINOTA', esAdicionales = tipoOp === 'ADICIONALES';
+  const esPremium = tipoDespGlobalActual === 'desp_externo';
+  const _esApoderado = tipoDespGlobalActual === 'apoderado';
+  const _esKotinya   = tipoDespGlobalActual === 'kotinya';
+  const _esPesos     = tipoDespGlobalActual === 'despachante_pesos';
+
+  const tcInput = document.getElementById('op_tc').value;
+  const tcParsed = parseFloat(tcInput);
+  const tcValido = !isNaN(tcParsed) && tcParsed > 0;
+  const tcFalta = _esPesos ? false : !tcValido;
+  const tc = _esPesos ? (tcValido ? tcParsed : 1) : (tcFalta ? 0 : tcParsed);
+
+  const items = [];
+  const usd = (u) => items.push({ usd: u, pesos: u * tc });
+  const pesos = (p) => items.push({ usd: 0, pesos: p });
+
+  if(_esApoderado) usd(T('t_apoderado',100));
+  else if(_esKotinya) usd(T('t_kotinya',85));
+  else if(esMultinota) usd(T('t_multinota',2));
+  else if(_esPesos && !esMIC && !esAdicionales){
+    pesos(canal === 'R' ? T('t_pesos_r',0) : T('t_pesos_vn',0));
+  } else if(!esMIC && !esAdicionales){
+    let hon;
+    if(esPremium) hon = canal === 'R' ? T('t_prem_r',0) : T('t_prem_vn',0);
+    else hon = canal === 'R' ? T('t_r',0) : T('t_vn',0);
+    usd(hon);
+  }
+
+  if(!esMultinota && !esAdicionales && document.getElementById('chk_sobre').checked) usd(T('t_sobre',0));
+  if(!esMultinota && !esAdicionales && document.getElementById('chk_cam').checked){
+    const n = parseInt(document.getElementById('n_cam').value)||1;
+    let t;
+    if(_esApoderado) t = T('t_cam_apod',0);
+    else if(esPremium) t = canal === 'R' ? T('t_prem_cam_r',0) : T('t_prem_cam_vn',0);
+    else t = canal === 'R' ? T('t_cam_r',0) : T('t_cam_vn',0);
+    usd(t*n);
+  }
+  if(!esMultinota && !esAdicionales && document.getElementById('chk_senasa_p').checked){
+    const n = parseInt(document.getElementById('n_senasa_p').value)||1;
+    usd(T('t_senasa_p',0)*n);
+  }
+  if(!esMultinota && !esAdicionales && document.getElementById('chk_senasa_prod').checked) usd(T('t_senasa_prod',0));
+  if(document.getElementById('chk_hojas').checked){
+    const n = parseInt(document.getElementById('n_hojas').value)||1;
+    usd(T('t_hoja',0)*n);
+  }
+  if(document.getElementById('chk_mic').checked) usd(T('t_mic',0));
+  if(document.getElementById('chk_mic_fojas').checked){
+    const n = parseInt(document.getElementById('n_mic_fojas').value)||1;
+    usd(T('t_mic_foja',0)*n);
+  }
+  if(document.getElementById('chk_finsem').checked) usd(T('t_finsem',0));
+  if(document.getElementById('chk_mov_ad').checked){
+    const v = T('t_mov_ad',0);
+    if(v>0) usd(v);
+  }
+  const adicPesos = parseFloat(document.getElementById('op_adicionales_pesos').value)||0;
+  if(adicPesos>0) pesos(adicPesos);
+  const adicUsd = parseFloat(document.getElementById('op_adicionales_usd').value)||0;
+  if(adicUsd>0) usd(adicUsd);
+
+  const totalNeto = items.reduce((a,b)=>a+b.pesos,0);
+  const iva = tieneFactura ? totalNeto*0.21 : 0;
+  const bruto = totalNeto + iva;
+  const totalUsd = items.reduce((a,b)=>a+b.usd,0);
+
+  return { totalNeto, iva, bruto, tc, totalUsd, esMIC, esMultinota, esAdicionales, tcFalta };
+}
+
+// ── Guardar (sin mostrar ningún monto al usuario) ──
+let guardando = false;
+window.guardarOperacion = async function(){
+  if(guardando) return;
+  const despachante = document.getElementById('op_despachante').value.trim().toUpperCase();
+  const destinacion = document.getElementById('op_destinacion').value.trim().toUpperCase();
+  const esAdicionalesTipo = document.getElementById('op_tipo').value === 'ADICIONALES';
+  const esPesosTipo = tipoDespGlobalActual === 'despachante_pesos';
+  const tcVal = parseFloat(document.getElementById('op_tc').value);
+
+  if(!despachante){ toast('Seleccioná o escribí un despachante', true); return; }
+  if(!esAdicionalesTipo && !destinacion){ toast('Ingresá la destinación/permiso', true); return; }
+  if(!esPesosTipo && (!tcVal || tcVal <= 0)){ toast('Falta el tipo de cambio', true); document.getElementById('op_tc').focus(); return; }
+
+  const calc = calcularOperacion();
+  if(calc.tcFalta){ toast('Falta el tipo de cambio', true); return; }
+
+  const cliente = document.getElementById('op_cliente').value.trim().toUpperCase();
+  const tipoOp = document.getElementById('op_tipo').value;
+
+  const adicTags = [];
+  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_sobre').checked) adicTags.push('Armado');
+  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_cam').checked) adicTags.push(`Cam×${document.getElementById('n_cam').value}`);
+  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_senasa_p').checked) adicTags.push(`SENASA-Embalaje×${document.getElementById('n_senasa_p').value}`);
+  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_senasa_prod').checked) adicTags.push('SENASA-Prod');
+  if(document.getElementById('chk_hojas').checked) adicTags.push(`Hojas×${document.getElementById('n_hojas').value}`);
+  if(document.getElementById('chk_mic').checked) adicTags.push(`MIC:${document.getElementById('op_mic').value.trim() || 's/n'}`);
+  if(calc.esMultinota) adicTags.push('Multinota');
+  if(calc.esAdicionales) adicTags.push('Adicionales');
+  if(document.getElementById('chk_mic_fojas').checked) adicTags.push(`FojaMIC×${document.getElementById('n_mic_fojas').value}`);
+  if(document.getElementById('chk_finsem').checked) adicTags.push('F/S');
+  if(document.getElementById('chk_mov_ad').checked) adicTags.push('MOV AD');
+
+  const btn = document.getElementById('btnGuardar');
+  const original = btn.innerHTML;
+  guardando = true; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando...';
+
+  try {
+    const anioActual = new Date().getFullYear();
+    const cnt = await getCountFromServer(query(collection(db,'despachantees_ops'), where('fecha','>=', anioActual+'-01-01')));
+    const numOp = cnt.data().count + 1;
+
+    const op = {
+      numOp,
+      fecha: document.getElementById('op_fecha').value,
+      despachante, cliente,
+      destinacion: calc.esAdicionales ? '' : destinacion,
+      canal: (calc.esMIC || calc.esMultinota || calc.esAdicionales) ? '' : document.getElementById('op_canal').value,
+      zpa: document.getElementById('op_zpa').value.trim().toUpperCase(),
+      tipo: tipoOp,
+      mic: document.getElementById('op_mic').value.trim().toUpperCase(),
+      toma: document.getElementById('op_toma').value.trim(),
+      tc: calc.tc, totalUsd: calc.totalUsd,
+      neto: calc.totalNeto, iva: calc.iva, bruto: calc.bruto,
+      adicionales: adicTags.join(', '),
+      obs: document.getElementById('op_obs').value.trim(),
+      periodoFactura: document.getElementById('op_periodo_factura').value,
+      tieneFactura,
+      esPremium: tipoDespGlobalActual === 'desp_externo',
+      esKotinya: esKotinyaActual,
+      esApoderado: esApoderadoActual,
+      esTarifaPesos: tipoDespGlobalActual === 'despachante_pesos',
+      ramiroDeuda: esKotinyaActual ? T('t_ramiro_op',30) : 0,
+      esMIC: calc.esMIC, esMultinota: calc.esMultinota, esAdicionales: calc.esAdicionales,
+      tipoDespGlobal: tipoDespGlobalActual,
+      opTcInput: document.getElementById('op_tc').value,
+      adicionalesPesos: parseFloat(document.getElementById('op_adicionales_pesos').value)||0,
+      adicionalesUsd: parseFloat(document.getElementById('op_adicionales_usd').value)||0,
+      chk_sobre: document.getElementById('chk_sobre').checked,
+      chk_cam: document.getElementById('chk_cam').checked,
+      n_cam: document.getElementById('n_cam').value,
+      chk_senasa_p: document.getElementById('chk_senasa_p').checked,
+      n_senasa_p: document.getElementById('n_senasa_p').value,
+      chk_senasa_prod: document.getElementById('chk_senasa_prod').checked,
+      chk_hojas: document.getElementById('chk_hojas').checked,
+      n_hojas: document.getElementById('n_hojas').value,
+      chk_mic_check: document.getElementById('chk_mic').checked,
+      n_mic_num: document.getElementById('n_mic_num')?.value || '',
+      chk_mic_fojas: document.getElementById('chk_mic_fojas').checked,
+      n_mic_fojas: document.getElementById('n_mic_fojas').value,
+      chk_finsem: document.getElementById('chk_finsem').checked,
+      chk_mov_ad: document.getElementById('chk_mov_ad').checked,
+      ramiroOPagado: 'no',
+      cargadoPor: currentUser.username,
+      ts: Date.now()
+    };
+
+    await addDoc(collection(db,'despachantees_ops'), op);
+
+    // Guarda el cliente final si es nuevo, para que aparezca la próxima vez en la lista
+    if(cliente){
+      const id = cliente.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
+      setDoc(doc(db,'corresponsales_clientes_finales', id), { nombre: cliente }, { merge: true }).catch(()=>{});
+    }
+
+    toast('✅ Operación guardada — ' + despachante + ' (' + op.fecha + ')');
+    limpiarFormulario();
+  } catch(e){
+    toast('❌ Error al guardar: ' + e.message, true);
+  } finally {
+    guardando = false; btn.disabled = false; btn.innerHTML = original;
+  }
+};
+
+function limpiarFormulario(){
+  document.getElementById('op_despachante').value = '';
+  document.getElementById('op_cliente').value = '';
+  document.getElementById('op_destinacion').value = '';
+  document.getElementById('op_zpa').value = '';
+  document.getElementById('op_mic').value = '';
+  document.getElementById('op_toma').value = '';
+  document.getElementById('op_obs').value = '';
+  document.getElementById('op_tc').value = '';
+  document.getElementById('op_adicionales_pesos').value = '0';
+  document.getElementById('op_adicionales_usd').value = '0';
+  document.getElementById('op_tipo').value = 'EXPO';
+  document.getElementById('op_canal').value = 'V';
+  document.querySelectorAll('.chk-item input[type=checkbox]').forEach(c => {
+    c.checked = false; c.closest('.chk-item')?.classList.remove('checked');
+  });
+  tipoDespGlobalActual = 'despachante'; tieneFactura = true; esApoderadoActual = false; esKotinyaActual = false;
+  document.getElementById('op_fecha').value = fechaLocalISO();
+  actualizarVisibilidad();
+}
+</script>
+</body>
+</html>
