@@ -31,26 +31,22 @@ body{font-family:'DM Sans',sans-serif;background:#f0f4f8;min-height:100vh;color:
 .logout-btn:hover{background:rgba(255,255,255,0.25);}
 
 .main{max-width:1600px;margin:0 auto;padding:12px;}
-.grid3{display:grid;grid-template-columns:1fr 1fr 0.9fr;gap:12px;align-items:start;}
-@media(max-width:1300px){ .grid3{grid-template-columns:1fr 1fr;} }
-@media(max-width:820px){ .grid3{grid-template-columns:1fr;} }
+.wide-card{background:#fff;border-radius:14px;padding:18px 22px;margin-bottom:14px;border:1px solid #e2e8f0;}
+.wide-card h3{font-size:13px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:16px;display:flex;align-items:center;gap:6px;}
+.row-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:16px;margin-bottom:16px;}
+.row-fields:last-child{margin-bottom:0;}
+.field label{display:block;font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.3px;margin-bottom:5px;}
+.field input, .field select, .field textarea{width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:9px;font-size:13.5px;font-family:'DM Sans',sans-serif;color:#1e293b;outline:none;background:#fff;}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:#1e3a8a;}
+.field.required-empty input{border-color:#fca5a5;background:#fef2f2;}
+.field.required-empty label{color:#dc2626;}
 
-.card{background:#fff;border-radius:12px;padding:14px 16px;margin-bottom:10px;border:1px solid #e2e8f0;}
-.card h3{font-size:11px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:.4px;margin-bottom:9px;}
-
-.form-group{display:flex;flex-direction:column;gap:3px;margin-bottom:8px;}
-.form-group label{font-size:10.5px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.3px;}
-.form-group input, .form-group select, .form-group textarea{padding:8px 10px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:13px;font-family:'DM Sans',sans-serif;color:#1e293b;outline:none;}
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus{border-color:#1e3a8a;}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-@media(max-width:520px){ .form-row{grid-template-columns:1fr;} }
-
-.chk-group{display:grid;grid-template-columns:1fr;gap:6px;}
-.chk-item{display:flex;align-items:center;gap:6px;background:#f8fafc;border-radius:7px;padding:6px 8px;cursor:pointer;border:1.5px solid transparent;}
+.chk-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+.chk-item{display:flex;align-items:center;gap:7px;background:#fff;border-radius:9px;padding:9px 12px;cursor:pointer;border:1.5px solid #e2e8f0;}
 .chk-item.checked{border-color:#1e3a8a;background:#eff6ff;}
-.chk-item input[type=checkbox]{accent-color:#1e3a8a;width:14px;height:14px;}
-.chk-item label{font-size:11.5px;font-weight:600;color:#334155;cursor:pointer;}
-.chk-item .chk-extra{width:44px;border:1px solid #e2e8f0;border-radius:5px;padding:2px 4px;font-size:11px;font-family:'DM Sans',sans-serif;text-align:right;margin-left:auto;}
+.chk-item input[type=checkbox]{accent-color:#1e3a8a;width:15px;height:15px;}
+.chk-item label{font-size:12.5px;font-weight:600;color:#334155;cursor:pointer;white-space:nowrap;}
+.chk-item .chk-extra{width:46px;border:1px solid #e2e8f0;border-radius:6px;padding:3px 5px;font-size:12px;font-family:'DM Sans',sans-serif;text-align:right;margin-left:2px;}
 
 .btn-primary{width:100%;background:#1e3a8a;color:#fff;border:none;padding:11px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
 .btn-primary:hover{background:#1e40af;}
@@ -122,156 +118,134 @@ table.mini tr:last-child td{border-bottom:none;}
   </div>
 
   <div class="main">
-    <div class="grid3">
 
-      <!-- COLUMNA 1: datos de la operación -->
-      <div>
-        <div class="card">
-          <h3>Datos de la operación</h3>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Fecha</label>
-              <input type="date" id="op_fecha">
-            </div>
-            <div class="form-group">
-              <label>Tipo de operación</label>
-              <select id="op_tipo" onchange="onTipoChange()">
-                <option value="EXPO">EXPO</option>
-                <option value="IMPO">IMPO</option>
-                <option value="TRAN">TRAN</option>
-                <option value="MIC">MIC</option>
-                <option value="MULTINOTA">MULTINOTA</option>
-                <option value="ADICIONALES">ADICIONALES</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>Despachante</label>
-              <input type="text" id="op_despachante" list="dl_despachantes" placeholder="Escribí o elegí" onchange="onCambiarDespachante()">
-              <datalist id="dl_despachantes"></datalist>
-            </div>
-            <div class="form-group">
-              <label>Cliente final</label>
-              <input type="text" id="op_cliente" list="dl_clientes" placeholder="Nombre del cliente">
-              <datalist id="dl_clientes"></datalist>
-            </div>
-          </div>
-          <button type="button" class="link-btn" id="btnToggleNuevoCliente" onclick="toggleNuevoCliente()">+ Agregar cliente nuevo</button>
-          <div class="inline-add" id="wrapNuevoCliente">
-            <input type="text" id="inp_nuevo_cliente" placeholder="Nombre del cliente nuevo" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarClienteNuevo();}">
-            <button type="button" onclick="guardarClienteNuevo()">Guardar</button>
-          </div>
-
-          <div class="form-row" id="destinacion-canal-row">
-            <div class="form-group" id="destinacion-group">
-              <label>Destinación / permiso</label>
-              <input type="text" id="op_destinacion" placeholder="Ej: 22001EC01...">
-            </div>
-            <div class="form-group" id="canal-group">
-              <label>Canal</label>
-              <select id="op_canal">
-                <option value="V">Verde (V)</option>
-                <option value="N">Naranja (N)</option>
-                <option value="R">Rojo (R)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>ZPA</label>
-              <input type="text" id="op_zpa" placeholder="Opcional">
-            </div>
-            <div class="form-group" id="mic-group">
-              <label>N° MIC</label>
-              <input type="text" id="op_mic" placeholder="Opcional">
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label>N° de toma / referencia</label>
-              <input type="text" id="op_toma" placeholder="Opcional">
-            </div>
-            <div class="form-group" id="tc-group">
-              <label>Tipo de cambio del día</label>
-              <input type="number" id="op_tc" step="0.01" placeholder="Ej: 1440">
-            </div>
-          </div>
-          <div class="hint" id="tc-hint">TC obligatorio salvo despachante con tarifa en pesos.</div>
-
-          <div class="form-group">
-            <label>Período de factura</label>
-            <select id="op_periodo_factura">
-              <option value="diario">Diario</option>
-              <option value="semanal">Semanal</option>
-              <option value="mensual" selected>Mensual</option>
-            </select>
-          </div>
+    <!-- DATOS DE LA OPERACIÓN -->
+    <div class="wide-card">
+      <h3>📋 Datos de la operación</h3>
+      <div class="row-fields">
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="op_fecha">
+        </div>
+        <div class="field">
+          <label>Despachante</label>
+          <input type="text" id="op_despachante" list="dl_despachantes" placeholder="Escribí el nombre..." onchange="onCambiarDespachante()">
+          <datalist id="dl_despachantes"></datalist>
+        </div>
+        <div class="field">
+          <label>Cliente final</label>
+          <input type="text" id="op_cliente" list="dl_clientes" placeholder="Nombre del cliente">
+          <datalist id="dl_clientes"></datalist>
+        </div>
+        <div class="field" id="destinacion-group">
+          <label>Destinación / permiso</label>
+          <input type="text" id="op_destinacion" placeholder="Ej: 22001EC01...">
+        </div>
+        <div class="field" id="canal-group">
+          <label>Canal</label>
+          <select id="op_canal">
+            <option value="V">Verde (V)</option>
+            <option value="N">Naranja (N)</option>
+            <option value="R">Rojo (R)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>ZPA / fiscal</label>
+          <input type="text" id="op_zpa" placeholder="PS / PTM / TCA...">
         </div>
       </div>
-
-      <!-- COLUMNA 2: adicionales + guardar -->
-      <div>
-        <div class="card">
-          <h3>Adicionales</h3>
-          <div class="chk-group">
-            <div class="chk-item" id="wrap_sobre"><input type="checkbox" id="chk_sobre"><label for="chk_sobre">Armado de sobre</label></div>
-            <div class="chk-item" id="wrap_cam"><input type="checkbox" id="chk_cam"><label for="chk_cam">Camión AD</label><input type="number" id="n_cam" class="chk-extra" value="1" min="1"></div>
-            <div class="chk-item" id="wrap_senasa_p"><input type="checkbox" id="chk_senasa_p"><label for="chk_senasa_p">SENASA embalaje</label><input type="number" id="n_senasa_p" class="chk-extra" value="1" min="1"></div>
-            <div class="chk-item" id="wrap_senasa_prod"><input type="checkbox" id="chk_senasa_prod"><label for="chk_senasa_prod">SENASA producto</label></div>
-            <div class="chk-item"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
-            <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas adic. MIC</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
-            <div class="chk-item"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
-            <div class="chk-item"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
-          </div>
-
-          <div class="form-row" style="margin-top:10px;">
-            <div class="form-group">
-              <label>Adicional en pesos ($)</label>
-              <input type="number" id="op_adicionales_pesos" step="0.01" value="0">
-            </div>
-            <div class="form-group">
-              <label>Adicional en USD</label>
-              <input type="number" id="op_adicionales_usd" step="0.01" value="0">
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom:0;">
-            <label>Observaciones</label>
-            <textarea id="op_obs" rows="1" placeholder="Opcional"></textarea>
-          </div>
+      <div class="row-fields">
+        <div class="field">
+          <label>Tipo de operación</label>
+          <select id="op_tipo" onchange="onTipoChange()">
+            <option value="EXPO">EXPO</option>
+            <option value="IMPO">IMPO</option>
+            <option value="TRAN">TRAN</option>
+            <option value="MIC">MIC</option>
+            <option value="MULTINOTA">MULTINOTA</option>
+            <option value="ADICIONALES">ADICIONALES</option>
+          </select>
         </div>
-
-        <button class="btn-primary" id="btnGuardar" onclick="guardarOperacion()">Guardar operación</button>
-      </div>
-
-      <!-- COLUMNA 3: listado plegable -->
-      <div>
-        <div class="card">
-          <div class="card-header-row" onclick="toggleCargas()">
-            <h3>Tus cargas recientes</h3>
-            <span class="toggle-arrow" id="cargasArrow">▾</span>
-          </div>
-          <div class="collapsible-body" id="cargasBody">
-            <div class="tabla-wrap">
-              <table class="mini">
-                <thead>
-                  <tr><th>Fecha</th><th>Despachante</th><th>Cliente</th><th>Destinación</th><th>Tipo</th><th>Canal</th><th></th></tr>
-                </thead>
-                <tbody id="tbody-mis-cargas">
-                  <tr><td colspan="7" class="empty-note">Cargando...</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
+        <div class="field">
+          <label>Período facturación</label>
+          <select id="op_periodo_factura">
+            <option value="diario">Por operación / diario</option>
+            <option value="semanal">Semanal</option>
+            <option value="mensual" selected>Mensual</option>
+          </select>
+        </div>
+        <div class="field" id="mic-group">
+          <label>N° MIC</label>
+          <input type="text" id="op_mic" placeholder="Ej: 26AR225103A">
+        </div>
+        <div class="field">
+          <label>Toma / referencia</label>
+          <input type="text" id="op_toma" placeholder="Ej: 13/5 AL 5/6  237-48-51...">
+        </div>
+        <div class="field" id="tc-group">
+          <label>TC oficialización ⚠️ obligatorio</label>
+          <input type="number" id="op_tc" step="0.01" placeholder="Ingresá el TC">
         </div>
       </div>
-
+      <button type="button" class="link-btn" id="btnToggleNuevoCliente" onclick="toggleNuevoCliente()" style="margin-top:2px;">+ Agregar cliente nuevo</button>
+      <div class="inline-add" id="wrapNuevoCliente">
+        <input type="text" id="inp_nuevo_cliente" placeholder="Nombre del cliente nuevo" onkeydown="if(event.key==='Enter'){event.preventDefault();guardarClienteNuevo();}">
+        <button type="button" onclick="guardarClienteNuevo()">Guardar</button>
+      </div>
     </div>
+
+    <!-- ADICIONALES Y SERVICIOS -->
+    <div class="wide-card">
+      <h3>➕ Adicionales y servicios</h3>
+      <div class="chk-row">
+        <div class="chk-item" id="wrap_sobre"><input type="checkbox" id="chk_sobre"><label for="chk_sobre">Armado de sobre</label></div>
+        <div class="chk-item" id="wrap_cam"><input type="checkbox" id="chk_cam"><label for="chk_cam">Camión AD</label><input type="number" id="n_cam" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item" id="wrap_senasa_p"><input type="checkbox" id="chk_senasa_p"><label for="chk_senasa_p">SENASA embalaje</label><input type="number" id="n_senasa_p" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item" id="wrap_senasa_prod"><input type="checkbox" id="chk_senasa_prod"><label for="chk_senasa_prod">SENASA producto</label></div>
+        <div class="chk-item"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item"><input type="checkbox" id="chk_mic"><label for="chk_mic">MIC</label><input type="text" id="n_mic_num" class="chk-extra" style="width:70px;" placeholder="N° MIC"></div>
+        <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas ad. MIC</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
+        <div class="chk-item"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
+      </div>
+      <div class="row-fields">
+        <div class="field">
+          <label>Adicionales en pesos</label>
+          <input type="number" id="op_adicionales_pesos" step="0.01" value="0">
+        </div>
+        <div class="field">
+          <label>Adicionales en USD</label>
+          <input type="number" id="op_adicionales_usd" step="0.01" value="0">
+        </div>
+        <div class="field" style="grid-column:span 2;">
+          <label>Observaciones</label>
+          <input type="text" id="op_obs" placeholder="Notas, referencia...">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btnGuardar" onclick="guardarOperacion()" style="max-width:320px;">Guardar operación</button>
+
+    <!-- LISTADO PLEGABLE -->
+    <div class="wide-card" style="margin-top:14px;">
+      <div class="card-header-row" onclick="toggleCargas()">
+        <h3 style="margin-bottom:0;">📄 Tus cargas recientes</h3>
+        <span class="toggle-arrow" id="cargasArrow">▾</span>
+      </div>
+      <div class="collapsible-body" id="cargasBody">
+        <div class="tabla-wrap" style="margin-top:12px;">
+          <table class="mini">
+            <thead>
+              <tr><th>Fecha</th><th>Despachante</th><th>Cliente</th><th>Destinación</th><th>Tipo</th><th>Canal</th><th></th></tr>
+            </thead>
+            <tbody id="tbody-mis-cargas">
+              <tr><td colspan="7" class="empty-note">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <div style="height:16px;"></div>
   </div>
 </div>
