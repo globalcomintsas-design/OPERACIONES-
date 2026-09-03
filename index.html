@@ -281,6 +281,8 @@ let cargadoresExtra = {};
 onSnapshot(collection(db,'corresponsales_cargadores'), snap => {
   cargadoresExtra = {};
   snap.docs.forEach(d => { cargadoresExtra[d.id] = d.data(); });
+}, err => {
+  console.warn('Error leyendo corresponsales_cargadores (revisá las reglas de Firestore):', err);
 });
 function getCargadores(){ return { ...CARGADORES_DEFAULT, ...cargadoresExtra }; }
 
@@ -457,24 +459,41 @@ window.onCambiarDespachante = function(){
 
 window.onTipoChange = function(){ actualizarVisibilidad(); };
 
+// ── FIX: cada acceso a un elemento del DOM ahora se protege con "?." o un chequeo
+// de null antes de tocar .style — así, si algún id no existe en el HTML, la función
+// avisa por consola cuál falta en vez de tirar un error que corta TODO el script
+// (que era la causa de que "guardarOperacion is not defined" apareciera después). ──
 function actualizarVisibilidad(){
-  const tipoOp = document.getElementById('op_tipo').value;
+  const tipoOp = document.getElementById('op_tipo')?.value;
   const esMIC = tipoOp === 'MIC', esMultinota = tipoOp === 'MULTINOTA', esAdicionales = tipoOp === 'ADICIONALES';
   const esPesos = tipoDespGlobalActual === 'despachante_pesos';
 
-  document.getElementById('chk_mic').checked = esMIC;
-  document.getElementById('destinacion-group').style.display = esAdicionales ? 'none' : '';
+  const chkMic = document.getElementById('chk_mic');
+  if(chkMic) chkMic.checked = esMIC;
+
+  const destinacionGroup = document.getElementById('destinacion-group');
+  if(destinacionGroup) destinacionGroup.style.display = esAdicionales ? 'none' : '';
+  else console.warn('Falta el elemento con id="destinacion-group" en el HTML');
 
   const sinCanal = esApoderadoActual || esKotinyaActual || esMIC || esMultinota || esAdicionales;
-  document.getElementById('canal-group').style.display = (esAdicionales) ? 'none' : '';
-  document.getElementById('canal-group').style.opacity = sinCanal ? '0.4' : '1';
-  document.getElementById('canal-group').style.pointerEvents = sinCanal ? 'none' : '';
+  const canalGroup = document.getElementById('canal-group');
+  if(canalGroup){
+    canalGroup.style.display = esAdicionales ? 'none' : '';
+    canalGroup.style.opacity = sinCanal ? '0.4' : '1';
+    canalGroup.style.pointerEvents = sinCanal ? 'none' : '';
+  } else {
+    console.warn('Falta el elemento con id="canal-group" en el HTML');
+  }
 
   ['wrap_sobre','wrap_cam','wrap_senasa_p','wrap_senasa_prod'].forEach(id => {
-    document.getElementById(id).style.display = (esMIC || esMultinota || esAdicionales) ? 'none' : '';
+    const el = document.getElementById(id);
+    if(el) el.style.display = (esMIC || esMultinota || esAdicionales) ? 'none' : '';
+    else console.warn('Falta el elemento con id="'+id+'" en el HTML');
   });
 
-  document.getElementById('tc-group').style.display = esPesos ? 'none' : '';
+  const tcGroup = document.getElementById('tc-group');
+  if(tcGroup) tcGroup.style.display = esPesos ? 'none' : '';
+  else console.warn('Falta el elemento con id="tc-group" en el HTML');
 }
 actualizarVisibilidad();
 
@@ -486,6 +505,8 @@ document.querySelectorAll('.chk-item input[type=checkbox]').forEach(c => {
 let tarifasConfig = {};
 onSnapshot(doc(db,'config','tarifas_operaciones'), snap => {
   tarifasConfig = snap.exists() ? snap.data() : {};
+}, err => {
+  console.warn('Error leyendo config/tarifas_operaciones (revisá las reglas de Firestore):', err);
 });
 function T(id, def){ const v = parseFloat(tarifasConfig[id]); return isNaN(v) ? def : v; }
 
