@@ -471,8 +471,15 @@ function actualizarVisibilidad(){
   const chkMic = document.getElementById('chk_mic');
   if(chkMic) chkMic.checked = esMIC;
 
+  // "Adicionales" y "MIC" no tienen destinación/permiso: se oculta el campo y se
+  // limpia el valor que hubiera quedado cargado de otro tipo de operación.
+  const sinDestinacion = esAdicionales || esMIC;
+  const destinacionInput = document.getElementById('op_destinacion');
   const destinacionGroup = document.getElementById('destinacion-group');
-  if(destinacionGroup) destinacionGroup.style.display = esAdicionales ? 'none' : '';
+  if(destinacionGroup){
+    destinacionGroup.style.display = sinDestinacion ? 'none' : '';
+    if(sinDestinacion && destinacionInput) destinacionInput.value = '';
+  }
   else console.warn('Falta el elemento con id="destinacion-group" en el HTML');
 
   const sinCanal = esApoderadoActual || esKotinyaActual || esMIC || esMultinota || esAdicionales;
@@ -590,11 +597,12 @@ window.guardarOperacion = async function(){
   const despachante = document.getElementById('op_despachante').value.trim().toUpperCase();
   const destinacion = document.getElementById('op_destinacion').value.trim().toUpperCase();
   const esAdicionalesTipo = document.getElementById('op_tipo').value === 'ADICIONALES';
+  const esMICTipo = document.getElementById('op_tipo').value === 'MIC';
   const esPesosTipo = tipoDespGlobalActual === 'despachante_pesos';
   const tcVal = parseFloat(document.getElementById('op_tc').value);
 
   if(!despachante){ toast('Seleccioná o escribí un despachante', true); return; }
-  if(!esAdicionalesTipo && !destinacion){ toast('Ingresá la destinación/permiso', true); return; }
+  if(!esAdicionalesTipo && !esMICTipo && !destinacion){ toast('Ingresá la destinación/permiso', true); return; }
   if(!esPesosTipo && (!tcVal || tcVal <= 0)){ toast('Falta el tipo de cambio', true); document.getElementById('op_tc').focus(); return; }
 
   const calc = calcularOperacion();
@@ -629,7 +637,10 @@ window.guardarOperacion = async function(){
       numOp,
       fecha: document.getElementById('op_fecha').value,
       despachante, cliente,
-      destinacion: calc.esAdicionales ? '' : destinacion,
+      // MIC y Adicionales no tienen destinación/permiso: se guarda vacío aunque haya
+      // quedado un valor cargado de antes (actualizarVisibilidad ya limpia el campo
+      // en pantalla apenas se elige alguno de estos dos tipos).
+      destinacion: (calc.esAdicionales || calc.esMIC) ? '' : destinacion,
       canal: (calc.esMIC || calc.esMultinota || calc.esAdicionales) ? '' : document.getElementById('op_canal').value,
       zpa: document.getElementById('op_zpa').value.trim().toUpperCase(),
       tipo: tipoOp,
