@@ -275,7 +275,7 @@ const db  = getFirestore(app);
 // página al empleado, o cargá usuarios reales en la colección Firestore
 // 'corresponsales_cargadores' (campos: password, nombre) con setDoc.
 const CARGADORES_DEFAULT = {
-  'cargador1': { password: 'CAMBIAR-ESTA-CLAVE', nombre: 'Empleado de carga' }
+  'Gcomint': { password: 'Global01', nombre: 'Empleado de carga' }
 };
 let cargadoresExtra = {};
 onSnapshot(collection(db,'corresponsales_cargadores'), snap => {
