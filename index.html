@@ -86,7 +86,13 @@ table.mini tr:last-child td{border-bottom:none;}
 .canal-R{background:#fee2e2;color:#991b1b;}
 .btn-del{background:#fee2e2;color:#991b1b;border:none;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:10.5px;font-weight:700;font-family:'DM Sans',sans-serif;}
 .btn-del:hover{background:#fecaca;}
+.btn-edit{background:#dbeafe;color:#1e3a8a;border:none;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:10.5px;font-weight:700;font-family:'DM Sans',sans-serif;margin-right:4px;}
+.btn-edit:hover{background:#bfdbfe;}
 .empty-note{color:#94a3b8;font-size:12px;text-align:center;padding:12px;}
+.impreso-si{color:#059669;font-weight:700;}
+.impreso-no{color:#cbd5e1;}
+.editing-banner{background:#fef9c3;border:1.5px solid #eab308;color:#854d0e;font-size:12px;font-weight:600;padding:9px 14px;border-radius:9px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;gap:10px;}
+.editing-banner.show{display:flex;}
 </style>
 </head>
 <body>
@@ -118,6 +124,11 @@ table.mini tr:last-child td{border-bottom:none;}
   </div>
 
   <div class="main">
+
+    <div class="editing-banner" id="editingBanner">
+      <span>✏️ Estás editando una operación ya cargada.</span>
+      <button type="button" class="link-btn" style="margin:0;" onclick="cancelarEdicion()">Cancelar edición</button>
+    </div>
 
     <!-- DATOS DE LA OPERACIÓN -->
     <div class="wide-card">
@@ -175,7 +186,7 @@ table.mini tr:last-child td{border-bottom:none;}
           </select>
         </div>
         <div class="field" id="mic-group">
-          <label>N° MIC</label>
+          <label>N° MIC ⚠️ obligatorio si es MIC</label>
           <input type="text" id="op_mic" placeholder="Ej: 26AR225103A">
         </div>
         <div class="field">
@@ -204,10 +215,12 @@ table.mini tr:last-child td{border-bottom:none;}
         <div class="chk-item" id="wrap_senasa_prod"><input type="checkbox" id="chk_senasa_prod"><label for="chk_senasa_prod">SENASA producto</label></div>
         <div class="chk-item"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
         <div class="chk-item"><input type="checkbox" id="chk_mic"><label for="chk_mic">MIC</label><input type="text" id="n_mic_num" class="chk-extra" style="width:70px;" placeholder="N° MIC"></div>
-        <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas ad. MIC</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas MIC impresas</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
         <div class="chk-item"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
         <div class="chk-item"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
+        <div class="chk-item" id="wrap_impreso"><input type="checkbox" id="chk_impreso"><label for="chk_impreso">Impreso</label></div>
       </div>
+      <div class="hint" id="hintFojasMic" style="margin-top:-6px;">ℹ️ En "Fojas MIC impresas" cargá el total de fojas que se imprimieron. La primera no se cobra: el sistema factura como adicional a partir de la 2da foja en adelante.</div>
       <div class="row-fields">
         <div class="field">
           <label>Adicionales en pesos</label>
@@ -225,6 +238,7 @@ table.mini tr:last-child td{border-bottom:none;}
     </div>
 
     <button class="btn-primary" id="btnGuardar" onclick="guardarOperacion()" style="max-width:320px;">Guardar operación</button>
+    <button type="button" class="link-btn" id="btnCancelarEdicion" style="display:none;" onclick="cancelarEdicion()">Cancelar edición</button>
 
     <!-- LISTADO PLEGABLE -->
     <div class="wide-card" style="margin-top:14px;">
@@ -233,13 +247,19 @@ table.mini tr:last-child td{border-bottom:none;}
         <span class="toggle-arrow" id="cargasArrow">▾</span>
       </div>
       <div class="collapsible-body" id="cargasBody">
-        <div class="tabla-wrap" style="margin-top:12px;">
+        <div class="row-fields" style="margin-top:12px;margin-bottom:8px;">
+          <div class="field" style="max-width:300px;">
+            <label>Buscar por cliente</label>
+            <input type="text" id="buscador_cliente" placeholder="Escribí el nombre del cliente..." oninput="filtrarMisCargas()">
+          </div>
+        </div>
+        <div class="tabla-wrap">
           <table class="mini">
             <thead>
-              <tr><th>Fecha</th><th>Despachante</th><th>Cliente</th><th>Destinación</th><th>Tipo</th><th>Canal</th><th></th></tr>
+              <tr><th>Fecha</th><th>Despachante</th><th>Cliente</th><th>Destinación</th><th>Tipo</th><th>Canal</th><th>MIC</th><th>Impreso</th><th></th></tr>
             </thead>
             <tbody id="tbody-mis-cargas">
-              <tr><td colspan="7" class="empty-note">Cargando...</td></tr>
+              <tr><td colspan="9" class="empty-note">Cargando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -325,6 +345,9 @@ window.toggleCargas = function(){
 };
 
 // ── Listado de las propias cargas — SOLO campos identificatorios, nunca $ ni TC ──
+let misCargasCache = [];
+let editingId = null;
+
 function iniciarListadoPropio(){
   const q = query(
     collection(db,'despachantees_ops'),
@@ -333,19 +356,30 @@ function iniciarListadoPropio(){
     limit(50)
   );
   onSnapshot(q, snap => {
-    const ops = snap.docs.map(d => ({ id:d.id, ...d.data() }));
-    renderMisCargas(ops);
+    misCargasCache = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    renderMisCargas(filtrarCargasArray(misCargasCache));
   }, err => {
     console.warn('Error listando cargas propias:', err);
     document.getElementById('tbody-mis-cargas').innerHTML =
-      '<tr><td colspan="7" class="empty-note">No se pudo cargar el listado</td></tr>';
+      '<tr><td colspan="9" class="empty-note">No se pudo cargar el listado</td></tr>';
   });
 }
+
+function filtrarCargasArray(arr){
+  const term = (document.getElementById('buscador_cliente')?.value || '').trim().toUpperCase();
+  if(!term) return arr;
+  return arr.filter(o => (o.cliente||'').toUpperCase().includes(term));
+}
+
+window.filtrarMisCargas = function(){
+  renderMisCargas(filtrarCargasArray(misCargasCache));
+};
 
 function renderMisCargas(ops){
   const tbody = document.getElementById('tbody-mis-cargas');
   if(!ops.length){
-    tbody.innerHTML = '<tr><td colspan="7" class="empty-note">Todavía no cargaste ninguna operación</td></tr>';
+    const msg = misCargasCache.length ? 'No se encontraron operaciones para ese cliente' : 'Todavía no cargaste ninguna operación';
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-note">${msg}</td></tr>`;
     return;
   }
   tbody.innerHTML = ops.map(o => `
@@ -356,7 +390,12 @@ function renderMisCargas(ops){
       <td>${o.destinacion||'-'}</td>
       <td>${o.tipo||''}</td>
       <td>${o.canal ? `<span class="canal-badge canal-${o.canal}">${o.canal}</span>` : '-'}</td>
-      <td><button class="btn-del" onclick="eliminarPropia('${o.id}')">Eliminar</button></td>
+      <td>${o.mic||'-'}</td>
+      <td>${o.impreso ? '<span class="impreso-si">✔ Sí</span>' : '<span class="impreso-no">—</span>'}</td>
+      <td>
+        <button class="btn-edit" onclick="editarPropia('${o.id}')">Editar</button>
+        <button class="btn-del" onclick="eliminarPropia('${o.id}')">Eliminar</button>
+      </td>
     </tr>
   `).join('');
 }
@@ -365,10 +404,77 @@ window.eliminarPropia = async function(id){
   if(!confirm('¿Eliminar esta operación cargada por vos?')) return;
   try {
     await deleteDoc(doc(db,'despachantees_ops', id));
+    if(editingId === id){ cancelarEdicion(); }
     toast('Operación eliminada');
   } catch(e){
     toast('❌ Error al eliminar: ' + e.message, true);
   }
+};
+
+// ── Editar una operación ya cargada: trae los datos al formulario ──
+window.editarPropia = function(id){
+  const o = misCargasCache.find(x => x.id === id);
+  if(!o){ toast('No se encontró la operación', true); return; }
+  editingId = id;
+
+  document.getElementById('op_fecha').value = o.fecha || fechaLocalISO();
+  document.getElementById('op_despachante').value = o.despachante || '';
+  document.getElementById('op_cliente').value = o.cliente || '';
+  document.getElementById('op_destinacion').value = o.destinacion || '';
+  document.getElementById('op_zpa').value = o.zpa || '';
+  document.getElementById('op_tipo').value = o.tipo || 'EXPO';
+  document.getElementById('op_mic').value = o.mic || '';
+  document.getElementById('op_toma').value = o.toma || '';
+  document.getElementById('op_tc').value = o.opTcInput || (o.tc || '');
+  document.getElementById('op_adicionales_pesos').value = o.adicionalesPesos || 0;
+  document.getElementById('op_adicionales_usd').value = o.adicionalesUsd || 0;
+  document.getElementById('op_obs').value = o.obs || '';
+
+  const setChk = (elId, val) => {
+    const el = document.getElementById(elId);
+    if(el){ el.checked = !!val; el.closest('.chk-item')?.classList.toggle('checked', !!val); }
+  };
+  setChk('chk_sobre', o.chk_sobre);
+  setChk('chk_cam', o.chk_cam);
+  setChk('chk_senasa_p', o.chk_senasa_p);
+  setChk('chk_senasa_prod', o.chk_senasa_prod);
+  setChk('chk_hojas', o.chk_hojas);
+  setChk('chk_mic', o.chk_mic_check);
+  setChk('chk_mic_fojas', o.chk_mic_fojas);
+  setChk('chk_finsem', o.chk_finsem);
+  setChk('chk_mov_ad', o.chk_mov_ad);
+  setChk('chk_impreso', o.impreso);
+
+  const setVal = (elId, val) => { const el = document.getElementById(elId); if(el) el.value = val; };
+  setVal('n_cam', o.n_cam || 1);
+  setVal('n_senasa_p', o.n_senasa_p || 1);
+  setVal('n_hojas', o.n_hojas || 1);
+  setVal('n_mic_num', o.n_mic_num || '');
+  setVal('n_mic_fojas', o.n_mic_fojas || 1);
+
+  // Recalcula tipoDespGlobalActual según el despachante cargado, y después
+  // reponemos el período de facturación y el canal guardados en la operación
+  // (onCambiarDespachante podría pisarlos con el default del despachante).
+  onCambiarDespachante();
+  document.getElementById('op_periodo_factura').value = o.periodoFactura || 'mensual';
+  document.getElementById('op_canal').value = o.canal || 'V';
+  actualizarVisibilidad();
+
+  document.getElementById('btnGuardar').textContent = 'Guardar cambios';
+  document.getElementById('btnCancelarEdicion').style.display = 'inline-block';
+  document.getElementById('editingBanner').classList.add('show');
+
+  window.scrollTo({top:0, behavior:'smooth'});
+  toast('Editando operación de ' + (o.despachante||''));
+};
+
+window.cancelarEdicion = function(){
+  editingId = null;
+  document.getElementById('btnGuardar').textContent = 'Guardar operación';
+  document.getElementById('btnCancelarEdicion').style.display = 'none';
+  document.getElementById('editingBanner').classList.remove('show');
+  limpiarFormulario();
+  toast('Edición cancelada');
 };
 
 // ── Alta rápida de cliente final (sin necesidad de cargar una operación) ──
@@ -569,14 +675,18 @@ function calcularOperacion(){
   }
   if(document.getElementById('chk_mic').checked) usd(T('t_mic',0));
   if(document.getElementById('chk_mic_fojas').checked){
-    const n = parseInt(document.getElementById('n_mic_fojas').value)||1;
-    usd(T('t_mic_foja',0)*n);
+    // La cantidad cargada es el total de fojas impresas. La primera foja no se
+    // cobra: el sistema la toma como adicional recién a partir de la 2da foja.
+    const nImpresas = parseInt(document.getElementById('n_mic_fojas').value)||1;
+    const nCobrables = Math.max(0, nImpresas - 1);
+    usd(T('t_mic_foja',0)*nCobrables);
   }
   if(document.getElementById('chk_finsem').checked) usd(T('t_finsem',0));
   if(document.getElementById('chk_mov_ad').checked){
     const v = T('t_mov_ad',0);
     if(v>0) usd(v);
   }
+  // "Impreso" es solo informativo, no agrega costo.
   const adicPesos = parseFloat(document.getElementById('op_adicionales_pesos').value)||0;
   if(adicPesos>0) pesos(adicPesos);
   const adicUsd = parseFloat(document.getElementById('op_adicionales_usd').value)||0;
@@ -600,10 +710,17 @@ window.guardarOperacion = async function(){
   const esMICTipo = document.getElementById('op_tipo').value === 'MIC';
   const esPesosTipo = tipoDespGlobalActual === 'despachante_pesos';
   const tcVal = parseFloat(document.getElementById('op_tc').value);
+  const micNumero = document.getElementById('op_mic').value.trim();
+  const chkMicChecked = document.getElementById('chk_mic').checked;
 
   if(!despachante){ toast('Seleccioná o escribí un despachante', true); return; }
   if(!esAdicionalesTipo && !esMICTipo && !destinacion){ toast('Ingresá la destinación/permiso', true); return; }
   if(!esPesosTipo && (!tcVal || tcVal <= 0)){ toast('Falta el tipo de cambio', true); document.getElementById('op_tc').focus(); return; }
+  if((esMICTipo || chkMicChecked) && !micNumero){
+    toast('Ingresá el número de MIC antes de guardar', true);
+    document.getElementById('op_mic').focus();
+    return;
+  }
 
   const calc = calcularOperacion();
   if(calc.tcFalta){ toast('Falta el tipo de cambio', true); return; }
@@ -620,21 +737,21 @@ window.guardarOperacion = async function(){
   if(document.getElementById('chk_mic').checked) adicTags.push(`MIC:${document.getElementById('op_mic').value.trim() || 's/n'}`);
   if(calc.esMultinota) adicTags.push('Multinota');
   if(calc.esAdicionales) adicTags.push('Adicionales');
-  if(document.getElementById('chk_mic_fojas').checked) adicTags.push(`FojaMIC×${document.getElementById('n_mic_fojas').value}`);
+  if(document.getElementById('chk_mic_fojas').checked){
+    const nImpresas = parseInt(document.getElementById('n_mic_fojas').value)||1;
+    const nCobrables = Math.max(0, nImpresas - 1);
+    adicTags.push(`FojaMIC×${nImpresas} (cobra ${nCobrables})`);
+  }
   if(document.getElementById('chk_finsem').checked) adicTags.push('F/S');
   if(document.getElementById('chk_mov_ad').checked) adicTags.push('MOV AD');
+  if(document.getElementById('chk_impreso').checked) adicTags.push('Impreso');
 
   const btn = document.getElementById('btnGuardar');
   const original = btn.innerHTML;
   guardando = true; btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Guardando...';
 
   try {
-    const anioActual = new Date().getFullYear();
-    const cnt = await getCountFromServer(query(collection(db,'despachantees_ops'), where('fecha','>=', anioActual+'-01-01')));
-    const numOp = cnt.data().count + 1;
-
     const op = {
-      numOp,
       fecha: document.getElementById('op_fecha').value,
       despachante, cliente,
       // MIC y Adicionales no tienen destinación/permiso: se guarda vacío aunque haya
@@ -644,7 +761,7 @@ window.guardarOperacion = async function(){
       canal: (calc.esMIC || calc.esMultinota || calc.esAdicionales) ? '' : document.getElementById('op_canal').value,
       zpa: document.getElementById('op_zpa').value.trim().toUpperCase(),
       tipo: tipoOp,
-      mic: document.getElementById('op_mic').value.trim().toUpperCase(),
+      mic: micNumero.toUpperCase(),
       toma: document.getElementById('op_toma').value.trim(),
       tc: calc.tc, totalUsd: calc.totalUsd,
       neto: calc.totalNeto, iva: calc.iva, bruto: calc.bruto,
@@ -676,12 +793,26 @@ window.guardarOperacion = async function(){
       n_mic_fojas: document.getElementById('n_mic_fojas').value,
       chk_finsem: document.getElementById('chk_finsem').checked,
       chk_mov_ad: document.getElementById('chk_mov_ad').checked,
-      ramiroOPagado: 'no',
-      cargadoPor: currentUser.username,
-      ts: Date.now()
+      impreso: document.getElementById('chk_impreso').checked,
+      ramiroOPagado: 'no'
     };
 
-    await addDoc(collection(db,'despachantees_ops'), op);
+    if(editingId){
+      const original2 = misCargasCache.find(x => x.id === editingId) || {};
+      op.numOp = original2.numOp;
+      op.ts = original2.ts;
+      op.cargadoPor = original2.cargadoPor || currentUser.username;
+      op.editadoPor = currentUser.username;
+      op.editadoTs = Date.now();
+      await setDoc(doc(db,'despachantees_ops', editingId), op);
+    } else {
+      const anioActual = new Date().getFullYear();
+      const cnt = await getCountFromServer(query(collection(db,'despachantees_ops'), where('fecha','>=', anioActual+'-01-01')));
+      op.numOp = cnt.data().count + 1;
+      op.cargadoPor = currentUser.username;
+      op.ts = Date.now();
+      await addDoc(collection(db,'despachantees_ops'), op);
+    }
 
     // Guarda el cliente final si es nuevo, para que aparezca la próxima vez en la lista
     if(cliente){
@@ -689,12 +820,19 @@ window.guardarOperacion = async function(){
       setDoc(doc(db,'corresponsales_clientes_finales', id), { nombre: cliente }, { merge: true }).catch(()=>{});
     }
 
-    toast('✅ Operación guardada — ' + despachante + ' (' + op.fecha + ')');
+    if(editingId){
+      toast('✅ Operación actualizada — ' + despachante);
+    } else {
+      toast('✅ Operación guardada — ' + despachante + ' (' + op.fecha + ')');
+    }
+    editingId = null;
+    document.getElementById('btnCancelarEdicion').style.display = 'none';
+    document.getElementById('editingBanner').classList.remove('show');
     limpiarFormulario();
   } catch(e){
     toast('❌ Error al guardar: ' + e.message, true);
   } finally {
-    guardando = false; btn.disabled = false; btn.innerHTML = original;
+    guardando = false; btn.disabled = false; btn.innerHTML = 'Guardar operación';
   }
 };
 
@@ -714,8 +852,10 @@ function limpiarFormulario(){
   document.querySelectorAll('.chk-item input[type=checkbox]').forEach(c => {
     c.checked = false; c.closest('.chk-item')?.classList.remove('checked');
   });
+  document.getElementById('n_mic_fojas').value = '1';
   tipoDespGlobalActual = 'despachante'; tieneFactura = true; esApoderadoActual = false; esKotinyaActual = false;
   document.getElementById('op_fecha').value = fechaLocalISO();
+  document.getElementById('btnGuardar').textContent = 'Guardar operación';
   actualizarVisibilidad();
 }
 </script>
