@@ -93,6 +93,14 @@ table.mini tr:last-child td{border-bottom:none;}
 .impreso-no{color:#cbd5e1;}
 .editing-banner{background:#fef9c3;border:1.5px solid #eab308;color:#854d0e;font-size:12px;font-weight:600;padding:9px 14px;border-radius:9px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;gap:10px;}
 .editing-banner.show{display:flex;}
+
+/* Selector ATA / Despachante */
+.modo-toggle{display:flex;background:#f0f4f8;border-radius:10px;padding:3px;gap:2px;flex-shrink:0;}
+.modo-btn{border:none;background:transparent;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;color:#64748b;transition:all .15s;text-transform:uppercase;letter-spacing:.3px;}
+.modo-btn.active{background:#1e3a8a;color:#fff;box-shadow:0 2px 6px rgba(30,58,138,0.3);}
+.modo-btn:hover:not(.active){background:#e2e8f0;}
+.card-title-row{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;}
+.card-title-row h3{margin-bottom:0;}
 </style>
 </head>
 <body>
@@ -132,7 +140,13 @@ table.mini tr:last-child td{border-bottom:none;}
 
     <!-- DATOS DE LA OPERACIÓN -->
     <div class="wide-card">
-      <h3>📋 Datos de la operación</h3>
+      <div class="card-title-row">
+        <h3>📋 Datos de la operación</h3>
+        <div class="modo-toggle" id="modoToggle">
+          <button type="button" class="modo-btn active" id="btnModoDespachante" onclick="setModo('despachante')">Despachante</button>
+          <button type="button" class="modo-btn" id="btnModoAta" onclick="setModo('ata')">ATA</button>
+        </div>
+      </div>
       <div class="row-fields">
         <div class="field">
           <label>Fecha</label>
@@ -213,11 +227,11 @@ table.mini tr:last-child td{border-bottom:none;}
         <div class="chk-item" id="wrap_cam"><input type="checkbox" id="chk_cam"><label for="chk_cam">Camión AD</label><input type="number" id="n_cam" class="chk-extra" value="1" min="1"></div>
         <div class="chk-item" id="wrap_senasa_p"><input type="checkbox" id="chk_senasa_p"><label for="chk_senasa_p">SENASA embalaje</label><input type="number" id="n_senasa_p" class="chk-extra" value="1" min="1"></div>
         <div class="chk-item" id="wrap_senasa_prod"><input type="checkbox" id="chk_senasa_prod"><label for="chk_senasa_prod">SENASA producto</label></div>
-        <div class="chk-item"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
-        <div class="chk-item"><input type="checkbox" id="chk_mic"><label for="chk_mic">MIC</label><input type="text" id="n_mic_num" class="chk-extra" style="width:70px;" placeholder="N° MIC"></div>
+        <div class="chk-item" id="wrap_hojas"><input type="checkbox" id="chk_hojas"><label for="chk_hojas">Hojas adicionales</label><input type="number" id="n_hojas" class="chk-extra" value="1" min="1"></div>
+        <div class="chk-item" id="wrap_mic"><input type="checkbox" id="chk_mic"><label for="chk_mic">MIC</label><input type="text" id="n_mic_num" class="chk-extra" style="width:70px;" placeholder="N° MIC"></div>
         <div class="chk-item" id="wrap_mic_fojas"><input type="checkbox" id="chk_mic_fojas"><label for="chk_mic_fojas">Fojas MIC impresas</label><input type="number" id="n_mic_fojas" class="chk-extra" value="1" min="1"></div>
-        <div class="chk-item"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
-        <div class="chk-item"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
+        <div class="chk-item" id="wrap_finsem"><input type="checkbox" id="chk_finsem"><label for="chk_finsem">Fin de semana</label></div>
+        <div class="chk-item" id="wrap_mov_ad"><input type="checkbox" id="chk_mov_ad"><label for="chk_mov_ad">MOV AD</label></div>
         <div class="chk-item" id="wrap_impreso"><input type="checkbox" id="chk_impreso"><label for="chk_impreso">Impreso</label></div>
       </div>
       <div class="hint" id="hintFojasMic" style="margin-top:-6px;">ℹ️ En "Fojas MIC impresas" cargá el total de fojas que se imprimieron. La primera no se cobra: el sistema factura como adicional a partir de la 2da foja en adelante.</div>
@@ -458,7 +472,9 @@ window.editarPropia = function(id){
   onCambiarDespachante();
   document.getElementById('op_periodo_factura').value = o.periodoFactura || 'mensual';
   document.getElementById('op_canal').value = o.canal || 'V';
-  actualizarVisibilidad();
+  // Restaura el modo ATA / Despachante guardado en la operación y refresca
+  // la visibilidad de campos (setModo ya llama a actualizarVisibilidad()).
+  setModo(o.modo || 'despachante');
 
   document.getElementById('btnGuardar').textContent = 'Guardar cambios';
   document.getElementById('btnCancelarEdicion').style.display = 'inline-block';
@@ -516,6 +532,9 @@ function fechaLocalISO(d = new Date()){
 }
 document.getElementById('op_fecha').value = fechaLocalISO();
 document.getElementById('op_fecha').addEventListener('change', function(){
+  // Para ATA no existe el recargo de fin de semana: no se tilda automáticamente
+  // (y el checkbox ni siquiera se muestra en ese modo).
+  if(modoCarga === 'ata') return;
   const d = new Date(this.value + 'T12:00:00');
   document.getElementById('chk_finsem').checked = (d.getDay() === 0 || d.getDay() === 6);
 });
@@ -537,6 +556,19 @@ let tipoDespGlobalActual = 'despachante';
 let tieneFactura = true;
 let esApoderadoActual = false;
 let esKotinyaActual = false;
+
+// ── Modo de carga: "despachante" (default) o "ata" ──
+// En modo Despachante se muestran todos los adicionales excepto los de MIC.
+// En modo ATA se muestran únicamente los adicionales de MIC (MIC, Fojas MIC
+// impresas e Impreso), y no aplica el recargo de fin de semana.
+let modoCarga = 'despachante';
+
+window.setModo = function(m){
+  modoCarga = (m === 'ata') ? 'ata' : 'despachante';
+  document.getElementById('btnModoDespachante').classList.toggle('active', modoCarga === 'despachante');
+  document.getElementById('btnModoAta').classList.toggle('active', modoCarga === 'ata');
+  actualizarVisibilidad();
+};
 
 window.onCambiarDespachante = function(){
   const nombre = document.getElementById('op_despachante').value.trim().toUpperCase();
@@ -573,9 +605,10 @@ function actualizarVisibilidad(){
   const tipoOp = document.getElementById('op_tipo')?.value;
   const esMIC = tipoOp === 'MIC', esMultinota = tipoOp === 'MULTINOTA', esAdicionales = tipoOp === 'ADICIONALES';
   const esPesos = tipoDespGlobalActual === 'despachante_pesos';
+  const esAta = modoCarga === 'ata';
 
   const chkMic = document.getElementById('chk_mic');
-  if(chkMic) chkMic.checked = esMIC;
+  if(chkMic) chkMic.checked = esAta || esMIC;
 
   // "Adicionales" y "MIC" no tienen destinación/permiso: se oculta el campo y se
   // limpia el valor que hubiera quedado cargado de otro tipo de operación.
@@ -598,11 +631,28 @@ function actualizarVisibilidad(){
     console.warn('Falta el elemento con id="canal-group" en el HTML');
   }
 
-  ['wrap_sobre','wrap_cam','wrap_senasa_p','wrap_senasa_prod'].forEach(id => {
+  // ── Adicionales exclusivos de "Despachante": se ocultan por completo en modo ATA ──
+  ['wrap_sobre','wrap_cam','wrap_senasa_p','wrap_senasa_prod','wrap_hojas','wrap_finsem','wrap_mov_ad'].forEach(id => {
     const el = document.getElementById(id);
-    if(el) el.style.display = (esMIC || esMultinota || esAdicionales) ? 'none' : '';
+    if(el) el.style.display = (esAta || esMIC || esMultinota || esAdicionales) ? 'none' : '';
     else console.warn('Falta el elemento con id="'+id+'" en el HTML');
   });
+
+  // Para ATA no existe el recargo de fin de semana: si estaba tildado, se destilda.
+  if(esAta){
+    const chkFin = document.getElementById('chk_finsem');
+    if(chkFin){ chkFin.checked = false; chkFin.closest('.chk-item')?.classList.remove('checked'); }
+  }
+
+  // ── Adicionales exclusivos de "ATA" (MIC, Fojas MIC impresas, Impreso):
+  // se ocultan por completo en modo Despachante ──
+  ['wrap_mic','wrap_mic_fojas','wrap_impreso'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = esAta ? '' : 'none';
+    else console.warn('Falta el elemento con id="'+id+'" en el HTML');
+  });
+  const hintFojasMic = document.getElementById('hintFojasMic');
+  if(hintFojasMic) hintFojasMic.style.display = esAta ? '' : 'none';
 
   const tcGroup = document.getElementById('tc-group');
   if(tcGroup) tcGroup.style.display = esPesos ? 'none' : '';
@@ -632,6 +682,7 @@ function calcularOperacion(){
   const _esApoderado = tipoDespGlobalActual === 'apoderado';
   const _esKotinya   = tipoDespGlobalActual === 'kotinya';
   const _esPesos     = tipoDespGlobalActual === 'despachante_pesos';
+  const esAta = modoCarga === 'ata';
 
   const tcInput = document.getElementById('op_tc').value;
   const tcParsed = parseFloat(tcInput);
@@ -655,8 +706,8 @@ function calcularOperacion(){
     usd(hon);
   }
 
-  if(!esMultinota && !esAdicionales && document.getElementById('chk_sobre').checked) usd(T('t_sobre',0));
-  if(!esMultinota && !esAdicionales && document.getElementById('chk_cam').checked){
+  if(!esAta && !esMultinota && !esAdicionales && document.getElementById('chk_sobre').checked) usd(T('t_sobre',0));
+  if(!esAta && !esMultinota && !esAdicionales && document.getElementById('chk_cam').checked){
     const n = parseInt(document.getElementById('n_cam').value)||1;
     let t;
     if(_esApoderado) t = T('t_cam_apod',0);
@@ -664,12 +715,12 @@ function calcularOperacion(){
     else t = canal === 'R' ? T('t_cam_r',0) : T('t_cam_vn',0);
     usd(t*n);
   }
-  if(!esMultinota && !esAdicionales && document.getElementById('chk_senasa_p').checked){
+  if(!esAta && !esMultinota && !esAdicionales && document.getElementById('chk_senasa_p').checked){
     const n = parseInt(document.getElementById('n_senasa_p').value)||1;
     usd(T('t_senasa_p',0)*n);
   }
-  if(!esMultinota && !esAdicionales && document.getElementById('chk_senasa_prod').checked) usd(T('t_senasa_prod',0));
-  if(document.getElementById('chk_hojas').checked){
+  if(!esAta && !esMultinota && !esAdicionales && document.getElementById('chk_senasa_prod').checked) usd(T('t_senasa_prod',0));
+  if(!esAta && document.getElementById('chk_hojas').checked){
     const n = parseInt(document.getElementById('n_hojas').value)||1;
     usd(T('t_hoja',0)*n);
   }
@@ -681,8 +732,9 @@ function calcularOperacion(){
     const nCobrables = Math.max(0, nImpresas - 1);
     usd(T('t_mic_foja',0)*nCobrables);
   }
-  if(document.getElementById('chk_finsem').checked) usd(T('t_finsem',0));
-  if(document.getElementById('chk_mov_ad').checked){
+  // Para ATA no existe el recargo de fin de semana: nunca se cobra en este modo.
+  if(!esAta && document.getElementById('chk_finsem').checked) usd(T('t_finsem',0));
+  if(!esAta && document.getElementById('chk_mov_ad').checked){
     const v = T('t_mov_ad',0);
     if(v>0) usd(v);
   }
@@ -727,13 +779,14 @@ window.guardarOperacion = async function(){
 
   const cliente = document.getElementById('op_cliente').value.trim().toUpperCase();
   const tipoOp = document.getElementById('op_tipo').value;
+  const esAta = modoCarga === 'ata';
 
   const adicTags = [];
-  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_sobre').checked) adicTags.push('Armado');
-  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_cam').checked) adicTags.push(`Cam×${document.getElementById('n_cam').value}`);
-  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_senasa_p').checked) adicTags.push(`SENASA-Embalaje×${document.getElementById('n_senasa_p').value}`);
-  if(!calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_senasa_prod').checked) adicTags.push('SENASA-Prod');
-  if(document.getElementById('chk_hojas').checked) adicTags.push(`Hojas×${document.getElementById('n_hojas').value}`);
+  if(!esAta && !calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_sobre').checked) adicTags.push('Armado');
+  if(!esAta && !calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_cam').checked) adicTags.push(`Cam×${document.getElementById('n_cam').value}`);
+  if(!esAta && !calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_senasa_p').checked) adicTags.push(`SENASA-Embalaje×${document.getElementById('n_senasa_p').value}`);
+  if(!esAta && !calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_senasa_prod').checked) adicTags.push('SENASA-Prod');
+  if(!esAta && document.getElementById('chk_hojas').checked) adicTags.push(`Hojas×${document.getElementById('n_hojas').value}`);
   if(document.getElementById('chk_mic').checked) adicTags.push(`MIC:${document.getElementById('op_mic').value.trim() || 's/n'}`);
   if(calc.esMultinota) adicTags.push('Multinota');
   if(calc.esAdicionales) adicTags.push('Adicionales');
@@ -742,8 +795,8 @@ window.guardarOperacion = async function(){
     const nCobrables = Math.max(0, nImpresas - 1);
     adicTags.push(`FojaMIC×${nImpresas} (cobra ${nCobrables})`);
   }
-  if(document.getElementById('chk_finsem').checked) adicTags.push('F/S');
-  if(document.getElementById('chk_mov_ad').checked) adicTags.push('MOV AD');
+  if(!esAta && document.getElementById('chk_finsem').checked) adicTags.push('F/S');
+  if(!esAta && document.getElementById('chk_mov_ad').checked) adicTags.push('MOV AD');
   if(document.getElementById('chk_impreso').checked) adicTags.push('Impreso');
 
   const btn = document.getElementById('btnGuardar');
@@ -761,6 +814,7 @@ window.guardarOperacion = async function(){
       canal: (calc.esMIC || calc.esMultinota || calc.esAdicionales) ? '' : document.getElementById('op_canal').value,
       zpa: document.getElementById('op_zpa').value.trim().toUpperCase(),
       tipo: tipoOp,
+      modo: modoCarga,
       mic: micNumero.toUpperCase(),
       toma: document.getElementById('op_toma').value.trim(),
       tc: calc.tc, totalUsd: calc.totalUsd,
@@ -779,20 +833,20 @@ window.guardarOperacion = async function(){
       opTcInput: document.getElementById('op_tc').value,
       adicionalesPesos: parseFloat(document.getElementById('op_adicionales_pesos').value)||0,
       adicionalesUsd: parseFloat(document.getElementById('op_adicionales_usd').value)||0,
-      chk_sobre: document.getElementById('chk_sobre').checked,
-      chk_cam: document.getElementById('chk_cam').checked,
+      chk_sobre: !esAta && document.getElementById('chk_sobre').checked,
+      chk_cam: !esAta && document.getElementById('chk_cam').checked,
       n_cam: document.getElementById('n_cam').value,
-      chk_senasa_p: document.getElementById('chk_senasa_p').checked,
+      chk_senasa_p: !esAta && document.getElementById('chk_senasa_p').checked,
       n_senasa_p: document.getElementById('n_senasa_p').value,
-      chk_senasa_prod: document.getElementById('chk_senasa_prod').checked,
-      chk_hojas: document.getElementById('chk_hojas').checked,
+      chk_senasa_prod: !esAta && document.getElementById('chk_senasa_prod').checked,
+      chk_hojas: !esAta && document.getElementById('chk_hojas').checked,
       n_hojas: document.getElementById('n_hojas').value,
       chk_mic_check: document.getElementById('chk_mic').checked,
       n_mic_num: document.getElementById('n_mic_num')?.value || '',
       chk_mic_fojas: document.getElementById('chk_mic_fojas').checked,
       n_mic_fojas: document.getElementById('n_mic_fojas').value,
-      chk_finsem: document.getElementById('chk_finsem').checked,
-      chk_mov_ad: document.getElementById('chk_mov_ad').checked,
+      chk_finsem: !esAta && document.getElementById('chk_finsem').checked,
+      chk_mov_ad: !esAta && document.getElementById('chk_mov_ad').checked,
       impreso: document.getElementById('chk_impreso').checked,
       ramiroOPagado: 'no'
     };
@@ -856,7 +910,7 @@ function limpiarFormulario(){
   tipoDespGlobalActual = 'despachante'; tieneFactura = true; esApoderadoActual = false; esKotinyaActual = false;
   document.getElementById('op_fecha').value = fechaLocalISO();
   document.getElementById('btnGuardar').textContent = 'Guardar operación';
-  actualizarVisibilidad();
+  setModo('despachante');
 }
 </script>
 </body>
