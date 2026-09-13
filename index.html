@@ -186,7 +186,6 @@ table.mini tr:last-child td{border-bottom:none;}
             <option value="EXPO">EXPO</option>
             <option value="IMPO">IMPO</option>
             <option value="TRAN">TRAN</option>
-            <option value="MIC">MIC</option>
             <option value="MULTINOTA">MULTINOTA</option>
             <option value="ADICIONALES">ADICIONALES</option>
           </select>
@@ -436,7 +435,6 @@ window.editarPropia = function(id){
   document.getElementById('op_cliente').value = o.cliente || '';
   document.getElementById('op_destinacion').value = o.destinacion || '';
   document.getElementById('op_zpa').value = o.zpa || '';
-  document.getElementById('op_tipo').value = o.tipo || 'EXPO';
   document.getElementById('op_mic').value = o.mic || '';
   document.getElementById('op_toma').value = o.toma || '';
   document.getElementById('op_tc').value = o.opTcInput || (o.tc || '');
@@ -472,9 +470,12 @@ window.editarPropia = function(id){
   onCambiarDespachante();
   document.getElementById('op_periodo_factura').value = o.periodoFactura || 'mensual';
   document.getElementById('op_canal').value = o.canal || 'V';
-  // Restaura el modo ATA / Despachante guardado en la operación y refresca
-  // la visibilidad de campos (setModo ya llama a actualizarVisibilidad()).
+  // Restaura el modo ATA / Despachante guardado en la operación (esto reconstruye
+  // las opciones del combo "Tipo de operación": solo MIC si es ATA, o el resto
+  // si es Despachante) y recién después fijamos el tipo guardado.
   setModo(o.modo || 'despachante');
+  document.getElementById('op_tipo').value = o.tipo || (modoCarga === 'ata' ? 'MIC' : 'EXPO');
+  actualizarVisibilidad();
 
   document.getElementById('btnGuardar').textContent = 'Guardar cambios';
   document.getElementById('btnCancelarEdicion').style.display = 'inline-block';
@@ -563,10 +564,34 @@ let esKotinyaActual = false;
 // impresas e Impreso), y no aplica el recargo de fin de semana.
 let modoCarga = 'despachante';
 
+// Reconstruye las opciones del combo "Tipo de operación" según el modo:
+// en ATA la única opción posible es MIC; en Despachante, todas las demás
+// (MIC queda excluido, porque en Despachante no se debe poder elegir MIC).
+function actualizarOpcionesTipo(){
+  const sel = document.getElementById('op_tipo');
+  if(!sel) return;
+  const esAta = modoCarga === 'ata';
+  if(esAta){
+    sel.innerHTML = '<option value="MIC">MIC</option>';
+    sel.value = 'MIC';
+    sel.disabled = true;
+  } else {
+    sel.innerHTML = `
+      <option value="EXPO">EXPO</option>
+      <option value="IMPO">IMPO</option>
+      <option value="TRAN">TRAN</option>
+      <option value="MULTINOTA">MULTINOTA</option>
+      <option value="ADICIONALES">ADICIONALES</option>`;
+    sel.disabled = false;
+    sel.value = 'EXPO';
+  }
+}
+
 window.setModo = function(m){
   modoCarga = (m === 'ata') ? 'ata' : 'despachante';
   document.getElementById('btnModoDespachante').classList.toggle('active', modoCarga === 'despachante');
   document.getElementById('btnModoAta').classList.toggle('active', modoCarga === 'ata');
+  actualizarOpcionesTipo();
   actualizarVisibilidad();
 };
 
@@ -658,6 +683,7 @@ function actualizarVisibilidad(){
   if(tcGroup) tcGroup.style.display = esPesos ? 'none' : '';
   else console.warn('Falta el elemento con id="tc-group" en el HTML');
 }
+actualizarOpcionesTipo();
 actualizarVisibilidad();
 
 document.querySelectorAll('.chk-item input[type=checkbox]').forEach(c => {
