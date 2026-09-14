@@ -678,6 +678,7 @@ window.setModo = function(m){
   modoCarga = (m === 'ata') ? 'ata' : 'despachante';
   document.getElementById('btnModoDespachante').classList.toggle('active', modoCarga === 'despachante');
   document.getElementById('btnModoAta').classList.toggle('active', modoCarga === 'ata');
+  localStorage.setItem('gc_modo_carga', modoCarga);
   actualizarOpcionesTipo();
   actualizarVisibilidad();
 };
@@ -774,6 +775,11 @@ function actualizarVisibilidad(){
 }
 actualizarOpcionesTipo();
 actualizarVisibilidad();
+
+// Al abrir la página, arranca en el modo (Despachante/ATA) que quedó guardado
+// la última vez, no siempre en Despachante.
+const modoGuardado = localStorage.getItem('gc_modo_carga');
+setModo(modoGuardado === 'ata' ? 'ata' : 'despachante');
 
 document.querySelectorAll('.chk-item input[type=checkbox]').forEach(c => {
   c.addEventListener('change', () => c.closest('.chk-item')?.classList.toggle('checked', c.checked));
@@ -1032,7 +1038,10 @@ function limpiarFormulario(){
   tipoDespGlobalActual = 'despachante'; tieneFactura = true; esApoderadoActual = false; esKotinyaActual = false;
   document.getElementById('op_fecha').value = fechaLocalISO();
   document.getElementById('btnGuardar').textContent = 'Guardar operación';
-  setModo('despachante');
+  // No se toca el modo (Despachante/ATA): queda tal cual lo dejó el usuario
+  // la última vez, hasta que lo cambie manualmente con los botones.
+  actualizarOpcionesTipo();
+  actualizarVisibilidad();
 }
 </script>
 </body>
