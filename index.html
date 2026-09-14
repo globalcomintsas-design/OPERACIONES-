@@ -72,7 +72,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0f4f8;min-height:100vh;color:
 .toggle-arrow{font-size:11px;color:#94a3b8;transition:transform .2s;}
 .toggle-arrow.open{transform:rotate(180deg);}
 .collapsible-body{max-height:0;overflow:hidden;transition:max-height .25s ease;}
-.collapsible-body.open{max-height:340px;overflow-y:auto;margin-top:10px;}
+.collapsible-body.open{max-height:480px;overflow-y:auto;margin-top:10px;}
 
 .tabla-wrap{overflow-x:auto;}
 table.mini{width:100%;border-collapse:collapse;font-size:11.5px;}
@@ -89,6 +89,12 @@ table.mini tr:last-child td{border-bottom:none;}
 .btn-edit{background:#dbeafe;color:#1e3a8a;border:none;padding:3px 8px;border-radius:6px;cursor:pointer;font-size:10.5px;font-weight:700;font-family:'DM Sans',sans-serif;margin-right:4px;}
 .btn-edit:hover{background:#bfdbfe;}
 .empty-note{color:#94a3b8;font-size:12px;text-align:center;padding:12px;}
+.paginacion-wrap{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin-top:12px;}
+.paginacion-info{width:100%;text-align:center;font-size:11px;color:#94a3b8;margin-bottom:2px;}
+.page-btn{border:1.5px solid #e2e8f0;background:#fff;color:#334155;padding:6px 11px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;}
+.page-btn:hover:not(:disabled){background:#eff6ff;border-color:#1e3a8a;}
+.page-btn.active{background:#1e3a8a;color:#fff;border-color:#1e3a8a;}
+.page-btn:disabled{opacity:.4;cursor:not-allowed;}
 .impreso-si{color:#059669;font-weight:700;}
 .impreso-no{color:#cbd5e1;}
 .editing-banner{background:#fef9c3;border:1.5px solid #eab308;color:#854d0e;font-size:12px;font-weight:600;padding:9px 14px;border-radius:9px;margin-bottom:14px;display:none;align-items:center;justify-content:space-between;gap:10px;}
@@ -289,6 +295,7 @@ table.mini tr:last-child td{border-bottom:none;}
             </tbody>
           </table>
         </div>
+        <div class="paginacion-wrap" id="paginacionCargas"></div>
       </div>
     </div>
 
@@ -379,7 +386,7 @@ function iniciarListadoPropio(){
     collection(db,'despachantees_ops'),
     where('cargadoPor','==', currentUser.username),
     orderBy('ts','desc'),
-    limit(50)
+    limit(300)
   );
   onSnapshot(q, snap => {
     misCargasCache = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -415,17 +422,29 @@ window.limpiarFiltrosCargas = function(){
 };
 
 window.filtrarMisCargas = function(){
+  currentPage = 1;
   renderMisCargas(filtrarCargasArray(misCargasCache));
 };
+
+const PAGE_SIZE = 15;
+let currentPage = 1;
 
 function renderMisCargas(ops){
   const tbody = document.getElementById('tbody-mis-cargas');
   if(!ops.length){
     const msg = misCargasCache.length ? 'No se encontraron operaciones para esos filtros' : 'Todavía no cargaste ninguna operación';
     tbody.innerHTML = `<tr><td colspan="9" class="empty-note">${msg}</td></tr>`;
+    renderPaginacion(0);
     return;
   }
-  tbody.innerHTML = ops.map(o => `
+
+  const totalPages = Math.max(1, Math.ceil(ops.length / PAGE_SIZE));
+  if(currentPage > totalPages) currentPage = totalPages;
+  if(currentPage < 1) currentPage = 1;
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = ops.slice(start, start + PAGE_SIZE);
+
+  tbody.innerHTML = pageItems.map(o => `
     <tr>
       <td>${o.fecha||''}</td>
       <td><strong>${o.despachante||''}</strong></td>
@@ -441,7 +460,32 @@ function renderMisCargas(ops){
       </td>
     </tr>
   `).join('');
+
+  renderPaginacion(ops.length);
 }
+
+function renderPaginacion(totalItems){
+  const cont = document.getElementById('paginacionCargas');
+  if(!cont) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE_SIZE));
+  if(totalItems === 0 || totalPages <= 1){ cont.innerHTML = ''; return; }
+
+  const start = (currentPage - 1) * PAGE_SIZE + 1;
+  const end = Math.min(currentPage * PAGE_SIZE, totalItems);
+
+  let html = `<div class="paginacion-info">Mostrando ${start}–${end} de ${totalItems}</div>`;
+  html += `<button type="button" class="page-btn" ${currentPage===1?'disabled':''} onclick="irAPagina(${currentPage-1})">‹ Anterior</button>`;
+  for(let p=1; p<=totalPages; p++){
+    html += `<button type="button" class="page-btn ${p===currentPage?'active':''}" onclick="irAPagina(${p})">${p}</button>`;
+  }
+  html += `<button type="button" class="page-btn" ${currentPage===totalPages?'disabled':''} onclick="irAPagina(${currentPage+1})">Siguiente ›</button>`;
+  cont.innerHTML = html;
+}
+
+window.irAPagina = function(p){
+  currentPage = p;
+  renderMisCargas(filtrarCargasArray(misCargasCache));
+};
 
 window.eliminarPropia = async function(id){
   if(!confirm('¿Eliminar esta operación cargada por vos?')) return;
