@@ -907,6 +907,7 @@ window.guardarOperacion = async function(){
   if(!esAta && !calc.esMultinota && !calc.esAdicionales && document.getElementById('chk_senasa_prod').checked) adicTags.push('SENASA-Prod');
   if(!esAta && document.getElementById('chk_hojas').checked) adicTags.push(`Hojas×${document.getElementById('n_hojas').value}`);
   if(document.getElementById('chk_mic').checked) adicTags.push(`MIC:${document.getElementById('op_mic').value.trim() || 's/n'}`);
+  if(document.getElementById('chk_mic').checked && !document.getElementById('chk_impreso').checked) adicTags.push('Sin liberar (no cobra)');
   if(calc.esMultinota) adicTags.push('Multinota');
   if(calc.esAdicionales) adicTags.push('Adicionales');
   if(document.getElementById('chk_mic_fojas').checked){
