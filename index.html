@@ -893,7 +893,9 @@ window.guardarOperacion = async function(){
   if(document.getElementById('chk_mic_fojas').checked){
     const nImpresas = parseInt(document.getElementById('n_mic_fojas').value)||1;
     const nCobrables = Math.max(0, nImpresas - 1);
-    adicTags.push(`FojaMIC×${nImpresas} (cobra ${nCobrables})`);
+    // Si es una sola foja no se cobra nada, así que no se anota nada en
+    // Adicionales. Si hay más, se anota solo la cantidad adicional cobrable.
+    if(nCobrables > 0) adicTags.push(`AD foja (${nCobrables})`);
   }
   if(!esAta && document.getElementById('chk_finsem').checked) adicTags.push('F/S');
   if(!esAta && document.getElementById('chk_mov_ad').checked) adicTags.push('MOV AD');
