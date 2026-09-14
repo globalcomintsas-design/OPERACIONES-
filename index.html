@@ -262,8 +262,8 @@ table.mini tr:last-child td{border-bottom:none;}
       <div class="collapsible-body" id="cargasBody">
         <div class="row-fields" style="margin-top:12px;margin-bottom:8px;">
           <div class="field">
-            <label>Buscar por cliente</label>
-            <input type="text" id="buscador_cliente" placeholder="Escribí el nombre del cliente..." oninput="filtrarMisCargas()">
+            <label>Buscar por cliente o despachante</label>
+            <input type="text" id="buscador_cliente" placeholder="Escribí el nombre..." oninput="filtrarMisCargas()">
           </div>
           <div class="field">
             <label>N° MIC</label>
@@ -398,7 +398,7 @@ function filtrarCargasArray(arr){
   const mes = document.getElementById('buscador_mes')?.value || ''; // formato YYYY-MM
 
   return arr.filter(o => {
-    if(termCliente && !(o.cliente||'').toUpperCase().includes(termCliente)) return false;
+    if(termCliente && !(o.cliente||'').toUpperCase().includes(termCliente) && !(o.despachante||'').toUpperCase().includes(termCliente)) return false;
     if(termMic && !(o.mic||'').toUpperCase().includes(termMic)) return false;
     if(fechaExacta && o.fecha !== fechaExacta) return false;
     if(mes && !(o.fecha||'').startsWith(mes)) return false;
