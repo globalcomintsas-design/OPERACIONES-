@@ -261,11 +261,24 @@ table.mini tr:last-child td{border-bottom:none;}
       </div>
       <div class="collapsible-body" id="cargasBody">
         <div class="row-fields" style="margin-top:12px;margin-bottom:8px;">
-          <div class="field" style="max-width:300px;">
+          <div class="field">
             <label>Buscar por cliente</label>
             <input type="text" id="buscador_cliente" placeholder="Escribí el nombre del cliente..." oninput="filtrarMisCargas()">
           </div>
+          <div class="field">
+            <label>N° MIC</label>
+            <input type="text" id="buscador_mic" placeholder="Ej: 26AR225103A" oninput="filtrarMisCargas()">
+          </div>
+          <div class="field">
+            <label>Fecha exacta</label>
+            <input type="date" id="buscador_fecha" onchange="filtrarMisCargas()">
+          </div>
+          <div class="field">
+            <label>Mes</label>
+            <input type="month" id="buscador_mes" onchange="filtrarMisCargas()">
+          </div>
         </div>
+        <button type="button" class="link-btn" style="margin-top:0;margin-bottom:10px;" onclick="limpiarFiltrosCargas()">Limpiar filtros</button>
         <div class="tabla-wrap">
           <table class="mini">
             <thead>
@@ -379,10 +392,27 @@ function iniciarListadoPropio(){
 }
 
 function filtrarCargasArray(arr){
-  const term = (document.getElementById('buscador_cliente')?.value || '').trim().toUpperCase();
-  if(!term) return arr;
-  return arr.filter(o => (o.cliente||'').toUpperCase().includes(term));
+  const termCliente = (document.getElementById('buscador_cliente')?.value || '').trim().toUpperCase();
+  const termMic = (document.getElementById('buscador_mic')?.value || '').trim().toUpperCase();
+  const fechaExacta = document.getElementById('buscador_fecha')?.value || '';
+  const mes = document.getElementById('buscador_mes')?.value || ''; // formato YYYY-MM
+
+  return arr.filter(o => {
+    if(termCliente && !(o.cliente||'').toUpperCase().includes(termCliente)) return false;
+    if(termMic && !(o.mic||'').toUpperCase().includes(termMic)) return false;
+    if(fechaExacta && o.fecha !== fechaExacta) return false;
+    if(mes && !(o.fecha||'').startsWith(mes)) return false;
+    return true;
+  });
 }
+
+window.limpiarFiltrosCargas = function(){
+  document.getElementById('buscador_cliente').value = '';
+  document.getElementById('buscador_mic').value = '';
+  document.getElementById('buscador_fecha').value = '';
+  document.getElementById('buscador_mes').value = '';
+  filtrarMisCargas();
+};
 
 window.filtrarMisCargas = function(){
   renderMisCargas(filtrarCargasArray(misCargasCache));
@@ -391,7 +421,7 @@ window.filtrarMisCargas = function(){
 function renderMisCargas(ops){
   const tbody = document.getElementById('tbody-mis-cargas');
   if(!ops.length){
-    const msg = misCargasCache.length ? 'No se encontraron operaciones para ese cliente' : 'Todavía no cargaste ninguna operación';
+    const msg = misCargasCache.length ? 'No se encontraron operaciones para esos filtros' : 'Todavía no cargaste ninguna operación';
     tbody.innerHTML = `<tr><td colspan="9" class="empty-note">${msg}</td></tr>`;
     return;
   }
