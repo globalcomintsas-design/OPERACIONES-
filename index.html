@@ -240,6 +240,7 @@ table.mini tr:last-child td{border-bottom:none;}
         <div class="chk-item" id="wrap_impreso"><input type="checkbox" id="chk_impreso"><label for="chk_impreso">Impreso</label></div>
       </div>
       <div class="hint" id="hintFojasMic" style="margin-top:-6px;">ℹ️ En "Fojas MIC impresas" cargá el total de fojas que se imprimieron. La primera no se cobra: el sistema factura como adicional a partir de la 2da foja en adelante.</div>
+      <div class="hint" id="hintImpreso" style="margin-top:-2px;">⚠️ El honorario del MIC y las fojas MIC solo se cobran cuando el MIC está "Impreso" (liberado). Si todavía no liberó, cargá la operación sin tildar Impreso — se guarda en $0 hasta que edites y lo tildes.</div>
       <div class="row-fields">
         <div class="field">
           <label>Adicionales en pesos</label>
@@ -282,6 +283,14 @@ table.mini tr:last-child td{border-bottom:none;}
           <div class="field">
             <label>Mes</label>
             <input type="month" id="buscador_mes" onchange="filtrarMisCargas()">
+          </div>
+          <div class="field">
+            <label>Impreso</label>
+            <select id="buscador_impreso" onchange="filtrarMisCargas()">
+              <option value="">Todos</option>
+              <option value="si">Sí</option>
+              <option value="no">No</option>
+            </select>
           </div>
         </div>
         <button type="button" class="link-btn" style="margin-top:0;margin-bottom:10px;" onclick="limpiarFiltrosCargas()">Limpiar filtros</button>
@@ -403,12 +412,15 @@ function filtrarCargasArray(arr){
   const termMic = (document.getElementById('buscador_mic')?.value || '').trim().toUpperCase();
   const fechaExacta = document.getElementById('buscador_fecha')?.value || '';
   const mes = document.getElementById('buscador_mes')?.value || ''; // formato YYYY-MM
+  const impresoFiltro = document.getElementById('buscador_impreso')?.value || ''; // '', 'si', 'no'
 
   return arr.filter(o => {
     if(termCliente && !(o.cliente||'').toUpperCase().includes(termCliente) && !(o.despachante||'').toUpperCase().includes(termCliente)) return false;
     if(termMic && !(o.mic||'').toUpperCase().includes(termMic)) return false;
     if(fechaExacta && o.fecha !== fechaExacta) return false;
     if(mes && !(o.fecha||'').startsWith(mes)) return false;
+    if(impresoFiltro === 'si' && !o.impreso) return false;
+    if(impresoFiltro === 'no' && o.impreso) return false;
     return true;
   });
 }
@@ -418,6 +430,7 @@ window.limpiarFiltrosCargas = function(){
   document.getElementById('buscador_mic').value = '';
   document.getElementById('buscador_fecha').value = '';
   document.getElementById('buscador_mes').value = '';
+  document.getElementById('buscador_impreso').value = '';
   filtrarMisCargas();
 };
 
@@ -752,6 +765,8 @@ function actualizarVisibilidad(){
   });
   const hintFojasMic = document.getElementById('hintFojasMic');
   if(hintFojasMic) hintFojasMic.style.display = esAta ? '' : 'none';
+  const hintImpreso = document.getElementById('hintImpreso');
+  if(hintImpreso) hintImpreso.style.display = esAta ? '' : 'none';
 
   const tcGroup = document.getElementById('tc-group');
   if(tcGroup) tcGroup.style.display = esPesos ? 'none' : '';
@@ -824,8 +839,12 @@ function calcularOperacion(){
     const n = parseInt(document.getElementById('n_hojas').value)||1;
     usd(T('t_hoja',0)*n);
   }
-  if(document.getElementById('chk_mic').checked) usd(T('t_mic',0));
-  if(document.getElementById('chk_mic_fojas').checked){
+  // El honorario del MIC y las fojas MIC solo se cobran una vez que el MIC
+  // está "Impreso" (liberado). Si todavía no se tildó, se carga la operación
+  // igual (para no perder el dato) pero sin sumar estos dos conceptos.
+  const impresoOk = document.getElementById('chk_impreso').checked;
+  if(document.getElementById('chk_mic').checked && impresoOk) usd(T('t_mic',0));
+  if(document.getElementById('chk_mic_fojas').checked && impresoOk){
     // La cantidad cargada es el total de fojas impresas. La primera foja no se
     // cobra: el sistema la toma como adicional recién a partir de la 2da foja.
     const nImpresas = parseInt(document.getElementById('n_mic_fojas').value)||1;
