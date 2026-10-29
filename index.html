@@ -393,6 +393,7 @@ window.toggleCargas = function(){
 // ── Listado de las propias cargas — SOLO campos identificatorios, nunca $ ni TC ──
 let misCargasCache = [];
 let editingId = null;
+let ajusteImpreso = null;   // {fechaImpreso, tcCarga}: lo setea el tilde de Impreso del listado y lo consume guardarOperacion
 
 function iniciarListadoPropio(){
   const q = query(
@@ -463,7 +464,7 @@ function renderMisCargas(ops){
 
   tbody.innerHTML = pageItems.map(o => `
     <tr>
-      <td>${o.fecha||''}</td>
+      <td${o.fechaImpreso ? ` title="Cargada el ${o.fechaCarga||''} · impresa el ${o.fechaImpreso}"` : ''}>${o.fecha||''}${o.fechaImpreso ? ' <span style="font-size:11px;">🖨️</span>' : ''}</td>
       <td><strong>${o.despachante||''}</strong></td>
       <td>${o.cliente||'-'}</td>
       <td>${o.destinacion||'-'}</td>
@@ -533,6 +534,7 @@ window.editarPropia = function(id){
 // Trae los datos de una operación al formulario (la usan Editar y el tilde rápido de Impreso)
 function cargarOpEnFormulario(o){
   editingId = o.id;
+  ajusteImpreso = null;
   _tcReqSeq++; _tcAutoAplicado = false; setTcHint('');   // el TC guardado en la operación manda
 
   document.getElementById('op_fecha').value = o.fecha || fechaLocalISO();
@@ -603,8 +605,16 @@ window.toggleImpreso = async function(id, checked){
   const chk = document.getElementById('chk_impreso');
   chk.checked = checked;
   chk.closest('.chk-item')?.classList.toggle('checked', checked);
-  await guardarOperacion();
-  if(editingId === id){            // falló la validación o el guardado: deshacer
+
+  // Operación MIC pre-cargada: fecha y TC pasan a HOY al tildar (y vuelven a los de la
+  // carga al destildar). Ver ajustarFechaTcPorImpreso. Si no se puede traer el dólar BNA,
+  // no se guarda con el TC viejo: se deshace el tilde.
+  const aj = await ajustarFechaTcPorImpreso(o, checked);
+  const sinTC = !aj.ok, tcHoy = aj.tcHoy, hoy = fechaLocalISO();
+  if(!sinTC) await guardarOperacion();
+  ajusteImpreso = null;
+  if(tcHoy && editingId !== id) toast(`✅ Impreso — fecha y TC actualizados a hoy (${_fechaAR(hoy)}) · BNA $ ${fmt2(tcHoy.venta)}`);
+  if(sinTC || editingId === id){   // falló la validación o el guardado: deshacer
     editingId = null;
     limpiarFormulario();
     document.getElementById('editingBanner').classList.remove('show');
@@ -783,6 +793,57 @@ async function actualizarTopbarTC(forzar){
   }
 }
 window.actualizarTopbarTC = actualizarTopbarTC;
+
+// ── IMPRESO en operaciones MIC pre-cargadas (mismo criterio desde el listado y desde Editar) ──
+//  · TILDAR  → la fecha que figura pasa a ser la de HOY (fecha de impreso; la de carga queda
+//              en fechaCarga) y el TC pasa al dólar BNA venta de HOY (el de carga queda en tcCarga).
+//  · DESTILDAR → vuelven la fecha y el TC de la carga.
+// Devuelve { ok, tcHoy }. ok=false si no se pudo traer el dólar (no se debe tildar).
+async function ajustarFechaTcPorImpreso(o, checked){
+  const hoy = fechaLocalISO();
+  const esMicOp = (o.tipo === 'MIC' || o.modo === 'ata') && !o.esTarifaPesos;
+  if(!esMicOp) return { ok: true, tcHoy: null };
+  if(checked){
+    toast('⏳ Buscando dólar oficial BNA de hoy...');
+    const r = await obtenerTCBnaVenta(hoy, true);
+    if(!r){
+      toast('⚠️ No se pudo traer el dólar BNA de hoy: no se tildó Impreso. Probá de nuevo.', true);
+      return { ok: false, tcHoy: null };
+    }
+    ajusteImpreso = { fechaImpreso: hoy, tcCarga: String(o.tcCarga || o.opTcInput || o.tc || '') };
+    document.getElementById('op_fecha').value = hoy;
+    document.getElementById('op_tc').value = r.venta;
+    _tcAutoAplicado = false; setTcHint('');
+    return { ok: true, tcHoy: r };
+  }
+  if(o.fechaImpreso){                      // ya estaba impresa: volver a los datos de la carga
+    ajusteImpreso = { fechaImpreso: '', tcCarga: '' };
+    document.getElementById('op_fecha').value = o.fechaCarga || o.fecha;
+    if(o.tcCarga) document.getElementById('op_tc').value = o.tcCarga;
+  } else if(ajusteImpreso){                // se tildó y se destildó en el mismo formulario: deshacer
+    ajusteImpreso = null;
+    document.getElementById('op_fecha').value = o.fecha || fechaLocalISO();
+    document.getElementById('op_tc').value = o.opTcInput || (o.tc || '');
+  }
+  return { ok: true, tcHoy: null };
+}
+
+// Tilde de Impreso dentro del formulario, editando una operación ya cargada
+document.getElementById('chk_impreso').addEventListener('change', async function(ev){
+  if(!ev.isTrusted || !editingId) return;          // solo clicks del usuario sobre una operación en edición
+  const idEd = editingId;
+  const o = misCargasCache.find(x => x.id === idEd);
+  if(!o) return;
+  const chk = this, checked = chk.checked;
+  const aj = await ajustarFechaTcPorImpreso(o, checked);
+  if(editingId !== idEd) return;                   // canceló/cambió la edición mientras esperaba
+  if(!aj.ok){
+    chk.checked = !checked;
+    chk.closest('.chk-item')?.classList.toggle('checked', chk.checked);
+    return;
+  }
+  if(aj.tcHoy) toast(`🖨️ Impreso — fecha y TC pasan a hoy (${_fechaAR(fechaLocalISO())}) · BNA $ ${fmt2(aj.tcHoy.venta)}. Guardá para confirmar.`);
+});
 actualizarTopbarTC();
 setInterval(() => actualizarTopbarTC(true), 10 * 60 * 1000);
 
@@ -1148,6 +1209,14 @@ window.guardarOperacion = async function(){
       ramiroOPagado: 'no'
     };
 
+    // Fecha de carga original / fecha de impreso / TC original de la carga
+    // (op.fecha pasa a ser la de impreso cuando se tilda Impreso desde el listado)
+    const _orig = editingId ? (misCargasCache.find(x => x.id === editingId) || {}) : {};
+    op.fechaCarga   = _orig.fechaCarga || _orig.fecha || op.fecha;
+    op.fechaImpreso = _orig.fechaImpreso || '';
+    op.tcCarga      = _orig.tcCarga || '';
+    if(ajusteImpreso){ op.fechaImpreso = ajusteImpreso.fechaImpreso; op.tcCarga = ajusteImpreso.tcCarga; }
+
     if(editingId){
       const original2 = misCargasCache.find(x => x.id === editingId) || {};
       op.numOp = original2.numOp;
@@ -1196,7 +1265,7 @@ function limpiarFormulario(){
   document.getElementById('op_toma').value = '';
   document.getElementById('op_obs').value = '';
   document.getElementById('op_tc').value = '';
-  _tcAutoAplicado = false; setTcHint('');
+  _tcAutoAplicado = false; setTcHint(''); ajusteImpreso = null;
   document.getElementById('op_adicionales_pesos').value = '0';
   document.getElementById('op_adicionales_usd').value = '0';
   document.getElementById('op_tipo').value = 'EXPO';
