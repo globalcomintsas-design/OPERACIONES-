@@ -533,6 +533,7 @@ window.editarPropia = function(id){
 // Trae los datos de una operación al formulario (la usan Editar y el tilde rápido de Impreso)
 function cargarOpEnFormulario(o){
   editingId = o.id;
+  _tcReqSeq++; _tcAutoAplicado = false; setTcHint('');   // el TC guardado en la operación manda
 
   document.getElementById('op_fecha').value = o.fecha || fechaLocalISO();
   document.getElementById('op_despachante').value = o.despachante || '';
@@ -737,7 +738,7 @@ function setTcHint(txt, color){
 // (venta) de la fecha de la operación. No pisa un TC que el usuario escribió a mano,
 // ni toca operaciones que se están editando, ni las de tarifa en pesos.
 async function aplicarTCBnaSiMIC(){
-  if(document.getElementById('op_tipo').value !== 'MIC') return;
+  if(modoCarga !== 'ata' || document.getElementById('op_tipo').value !== 'MIC') return;
   if(editingId) return;
   if(tipoDespGlobalActual === 'despachante_pesos') return;
   const tcEl = document.getElementById('op_tc');
@@ -748,7 +749,7 @@ async function aplicarTCBnaSiMIC(){
   setTcHint('⏳ Buscando dólar oficial BNA...', '#64748b');
   const r = await obtenerTCBnaVenta(fecha);
   if(seq !== _tcReqSeq) return;
-  if(document.getElementById('op_tipo').value !== 'MIC' || editingId) { setTcHint(''); return; }
+  if(modoCarga !== 'ata' || document.getElementById('op_tipo').value !== 'MIC' || editingId) { setTcHint(''); return; }
   if(tcEl.value && !_tcAutoAplicado) { setTcHint(''); return; }  // lo escribió el usuario mientras tanto
 
   if(!r){
@@ -931,7 +932,15 @@ function actualizarVisibilidad(){
   if(tcGroup) tcGroup.style.display = esPesos ? 'none' : '';
   else console.warn('Falta el elemento con id="tc-group" en el HTML');
 
-  aplicarTCBnaSiMIC();   // tipo MIC (modo ATA) → completa el TC con el dólar BNA venta
+  // En modo Despachante el TC es el de la fecha de oficialización (lo carga el usuario):
+  // si había uno puesto automáticamente por el sistema (venido de ATA), se borra.
+  if(!(esAta && esMIC) && _tcAutoAplicado){
+    _tcReqSeq++;
+    document.getElementById('op_tc').value = '';
+    _tcAutoAplicado = false;
+    setTcHint('');
+  }
+  aplicarTCBnaSiMIC();   // solo ATA + MIC → completa el TC con el dólar BNA venta
 }
 actualizarOpcionesTipo();
 actualizarVisibilidad();
