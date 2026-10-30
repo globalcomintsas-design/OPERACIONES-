@@ -136,7 +136,6 @@ table.mini tr:last-child td{border-bottom:none;}
       <div class="topbar-brand">GLOBALCOMINT</div>
       <div class="topbar-sub" id="userChip"></div>
     </div>
-    <span id="topbarTC" title="Dólar oficial Banco Nación (venta) del día — click para actualizar" onclick="actualizarTopbarTC(true)" style="background:rgba(255,255,255,0.15);color:#fff;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;cursor:pointer;white-space:nowrap;">💵 BNA venta: ...</span>
     <button class="logout-btn" onclick="cerrarSesion()">Salir</button>
   </div>
 
@@ -218,7 +217,6 @@ table.mini tr:last-child td{border-bottom:none;}
         <div class="field" id="tc-group">
           <label>TC oficialización ⚠️ obligatorio</label>
           <input type="number" id="op_tc" step="0.01" placeholder="Ingresá el TC">
-          <div id="op_tc_hint" style="font-size:11px;font-weight:600;min-height:14px;"></div>
         </div>
       </div>
       <button type="button" class="link-btn" id="btnToggleNuevoCliente" onclick="toggleNuevoCliente()" style="margin-top:2px;">+ Agregar cliente nuevo</button>
@@ -321,8 +319,8 @@ table.mini tr:last-child td{border-bottom:none;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
-  getFirestore, collection, addDoc, doc, getDoc, setDoc, deleteDoc, onSnapshot,
-  query, where, orderBy, limit, getCountFromServer
+  getFirestore, collection, addDoc, doc, getDoc, getDocs, setDoc, deleteDoc, onSnapshot,
+  query, where, orderBy, limit
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -344,12 +342,17 @@ const CARGADORES_DEFAULT = {
   'Gcomint': { password: 'Global01', nombre: 'Empleado de carga' }
 };
 let cargadoresExtra = {};
-onSnapshot(collection(db,'corresponsales_cargadores'), snap => {
-  cargadoresExtra = {};
-  snap.docs.forEach(d => { cargadoresExtra[d.id] = d.data(); });
-}, err => {
-  console.warn('Error leyendo corresponsales_cargadores (revisá las reglas de Firestore):', err);
-});
+// Los usuarios de carga se leen SOLO cuando alguien intenta ingresar (una lectura corta),
+// no en cada apertura: con la sesión guardada no se lee nada.
+async function cargarCargadores(){
+  try {
+    const snap = await getDocs(collection(db,'corresponsales_cargadores'));
+    cargadoresExtra = {};
+    snap.docs.forEach(d => { cargadoresExtra[d.id] = d.data(); });
+  } catch(err){
+    console.warn('Error leyendo corresponsales_cargadores (revisá las reglas de Firestore):', err);
+  }
+}
 function getCargadores(){ return { ...CARGADORES_DEFAULT, ...cargadoresExtra }; }
 
 let currentUser = null;
@@ -358,9 +361,10 @@ if(sesion){
   try { currentUser = JSON.parse(sesion); mostrarApp(); } catch(e){ localStorage.removeItem('gc_cargador_user'); }
 }
 
-window.ingresar = function(){
+window.ingresar = async function(){
   const u = document.getElementById('inpUsuario').value.trim();
   const p = document.getElementById('inpPassword').value;
+  await cargarCargadores();
   const user = getCargadores()[u];
   if(user && user.password === p){
     currentUser = { username: u, nombre: user.nombre || u };
@@ -393,14 +397,13 @@ window.toggleCargas = function(){
 // ── Listado de las propias cargas — SOLO campos identificatorios, nunca $ ni TC ──
 let misCargasCache = [];
 let editingId = null;
-let ajusteImpreso = null;   // {fechaImpreso, tcCarga}: lo setea el tilde de Impreso del listado y lo consume guardarOperacion
 
 function iniciarListadoPropio(){
   const q = query(
     collection(db,'despachantees_ops'),
     where('cargadoPor','==', currentUser.username),
     orderBy('ts','desc'),
-    limit(300)
+    limit(50)
   );
   onSnapshot(q, snap => {
     misCargasCache = snap.docs.map(d => ({ id:d.id, ...d.data() }));
@@ -464,7 +467,7 @@ function renderMisCargas(ops){
 
   tbody.innerHTML = pageItems.map(o => `
     <tr>
-      <td${o.fechaImpreso ? ` title="Cargada el ${o.fechaCarga||''} · impresa el ${o.fechaImpreso}"` : ''}>${o.fecha||''}${o.fechaImpreso ? ' <span style="font-size:11px;">🖨️</span>' : ''}</td>
+      <td>${o.fecha||''}</td>
       <td><strong>${o.despachante||''}</strong></td>
       <td>${o.cliente||'-'}</td>
       <td>${o.destinacion||'-'}</td>
@@ -534,8 +537,6 @@ window.editarPropia = function(id){
 // Trae los datos de una operación al formulario (la usan Editar y el tilde rápido de Impreso)
 function cargarOpEnFormulario(o){
   editingId = o.id;
-  ajusteImpreso = null;
-  _tcReqSeq++; _tcAutoAplicado = false; setTcHint('');   // el TC guardado en la operación manda
 
   document.getElementById('op_fecha').value = o.fecha || fechaLocalISO();
   document.getElementById('op_despachante').value = o.despachante || '';
@@ -605,16 +606,8 @@ window.toggleImpreso = async function(id, checked){
   const chk = document.getElementById('chk_impreso');
   chk.checked = checked;
   chk.closest('.chk-item')?.classList.toggle('checked', checked);
-
-  // Operación MIC pre-cargada: fecha y TC pasan a HOY al tildar (y vuelven a los de la
-  // carga al destildar). Ver ajustarFechaTcPorImpreso. Si no se puede traer el dólar BNA,
-  // no se guarda con el TC viejo: se deshace el tilde.
-  const aj = await ajustarFechaTcPorImpreso(o, checked);
-  const sinTC = !aj.ok, tcHoy = aj.tcHoy, hoy = fechaLocalISO();
-  if(!sinTC) await guardarOperacion();
-  ajusteImpreso = null;
-  if(tcHoy && editingId !== id) toast(`✅ Impreso — fecha y TC actualizados a hoy (${_fechaAR(hoy)}) · BNA $ ${fmt2(tcHoy.venta)}`);
-  if(sinTC || editingId === id){   // falló la validación o el guardado: deshacer
+  await guardarOperacion();
+  if(editingId === id){            // falló la validación o el guardado: deshacer
     editingId = null;
     limpiarFormulario();
     document.getElementById('editingBanner').classList.remove('show');
@@ -652,6 +645,7 @@ window.guardarClienteNuevo = async function(){
     input.value = '';
     document.getElementById('op_cliente').value = nombre;
     toggleNuevoCliente();
+    agregarClienteFinalLocal(nombre);
     toast('✅ Cliente guardado: ' + nombre);
   } catch(e){
     toast('❌ Error al guardar el cliente: ' + e.message, true);
@@ -672,7 +666,6 @@ function fechaLocalISO(d = new Date()){
 }
 document.getElementById('op_fecha').value = fechaLocalISO();
 document.getElementById('op_fecha').addEventListener('change', function(){
-  aplicarTCBnaSiMIC();   // si el TC es automático (MIC), lo actualiza a la nueva fecha
   // Para ATA no existe el recargo de fin de semana: no se tilda automáticamente
   // (y el checkbox ni siquiera se muestra en ese modo).
   if(modoCarga === 'ata') return;
@@ -680,184 +673,54 @@ document.getElementById('op_fecha').addEventListener('change', function(){
   document.getElementById('chk_finsem').checked = (d.getDay() === 0 || d.getDay() === 6);
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-// TIPO DE CAMBIO — DÓLAR OFICIAL BANCO NACIÓN (VENTA = el más caro)
-//  · Hoy:       dolarapi.com  (/v1/dolares/oficial)
-//  · Histórico: argentinadatos.com (/v1/cotizaciones/dolares/oficial/AAAA/MM/DD)
-//    Si ese día no hay cotización (sábado, domingo, feriado) retrocede al
-//    último día hábil anterior (hasta 7 días).
-//  Misma metodología que el sistema principal (operaciones).
-// ═══════════════════════════════════════════════════════════════════════
-const _tcBnaCache = {};        // { 'AAAA-MM-DD': {venta, compra, fechaCotiz, fuente, ts} }
-let _tcAutoAplicado = false;   // true = el TC del formulario lo puso el sistema (y el usuario no lo tocó)
-let _tcReqSeq = 0;             // evita que una respuesta vieja pise a una más nueva
-
-function fmt2(n){ return Number(n).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
-function _fechaAR(iso){ const [y,m,d] = String(iso).slice(0,10).split('-'); return `${d}/${m}/${y}`; }
-function _sumarDiasISO(iso, n){
-  const d = new Date(iso + 'T12:00:00');
-  d.setDate(d.getDate() + n);
-  return fechaLocalISO(d);
-}
-async function _fetchJSON(url, ms = 8000){
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  try{
-    const r = await fetch(url, { signal: ctrl.signal });
-    if(!r.ok) return null;
-    return await r.json();
-  } catch(e){ return null; }
-  finally { clearTimeout(t); }
-}
-
-async function obtenerTCBnaVenta(fechaISO, forzar){
-  const hoy = fechaLocalISO();
-  if(!fechaISO || fechaISO > hoy) fechaISO = hoy;
-  const c = _tcBnaCache[fechaISO];
-  if(!forzar && c && (fechaISO !== hoy || Date.now() - c.ts < 10 * 60 * 1000)) return c;
-
-  let res = null;
-  if(fechaISO === hoy){
-    const j = await _fetchJSON('https://dolarapi.com/v1/dolares/oficial');
-    if(j && Number(j.venta) > 0){
-      res = { venta: Number(j.venta), compra: Number(j.compra) || null, fechaCotiz: hoy, fuente: 'dolarapi.com' };
-    }
-  }
-  for(let i = 0; i <= 7 && !res; i++){
-    const f = _sumarDiasISO(fechaISO, -i);
-    const [y, m, d] = f.split('-');
-    let j = await _fetchJSON(`https://api.argentinadatos.com/v1/cotizaciones/dolares/oficial/${y}/${m}/${d}`);
-    if(Array.isArray(j)) j = j[j.length - 1];
-    if(j && Number(j.venta) > 0){
-      res = { venta: Number(j.venta), compra: Number(j.compra) || null, fechaCotiz: f, fuente: 'argentinadatos.com' };
-    }
-  }
-  if(res){ res.ts = Date.now(); _tcBnaCache[fechaISO] = res; }
-  return res;
-}
-window.obtenerTCBnaVenta = obtenerTCBnaVenta;
-
-function setTcHint(txt, color){
-  const el = document.getElementById('op_tc_hint');
-  if(!el) return;
-  el.textContent = txt || '';
-  el.style.color = color || '#64748b';
-}
-
-// Al cargar una operación NUEVA de tipo MIC: completa el TC con el dólar oficial BNA
-// (venta) de la fecha de la operación. No pisa un TC que el usuario escribió a mano,
-// ni toca operaciones que se están editando, ni las de tarifa en pesos.
-async function aplicarTCBnaSiMIC(){
-  if(modoCarga !== 'ata' || document.getElementById('op_tipo').value !== 'MIC') return;
-  if(editingId) return;
-  if(tipoDespGlobalActual === 'despachante_pesos') return;
-  const tcEl = document.getElementById('op_tc');
-  if(tcEl.value && !_tcAutoAplicado) return;
-
-  const fecha = document.getElementById('op_fecha').value || fechaLocalISO();
-  const seq = ++_tcReqSeq;
-  setTcHint('⏳ Buscando dólar oficial BNA...', '#64748b');
-  const r = await obtenerTCBnaVenta(fecha);
-  if(seq !== _tcReqSeq) return;
-  if(modoCarga !== 'ata' || document.getElementById('op_tipo').value !== 'MIC' || editingId) { setTcHint(''); return; }
-  if(tcEl.value && !_tcAutoAplicado) { setTcHint(''); return; }  // lo escribió el usuario mientras tanto
-
-  if(!r){
-    setTcHint('⚠️ No se pudo traer el dólar BNA — ingresá el TC a mano', '#dc2626');
-    toast('⚠️ No se pudo traer el dólar BNA, ingresá el TC a mano', true);
-    return;
-  }
-  tcEl.value = r.venta;
-  _tcAutoAplicado = true;
-  const dif = r.fechaCotiz !== fecha ? ` · último día hábil (${_fechaAR(r.fechaCotiz)})` : '';
-  setTcHint(`💵 BNA venta ${_fechaAR(fecha)}: $ ${fmt2(r.venta)} (automático)${dif}`, '#059669');
-}
-window.aplicarTCBnaSiMIC = aplicarTCBnaSiMIC;
-
-// Si el usuario escribe el TC a mano, deja de ser "automático" y no se vuelve a pisar
-document.getElementById('op_tc').addEventListener('input', function(ev){
-  if(ev.isTrusted){ _tcAutoAplicado = false; setTcHint(''); }
-});
-
-// ── TC DEL DÍA EN LA BARRA AZUL SUPERIOR ──
-async function actualizarTopbarTC(forzar){
-  const el = document.getElementById('topbarTC');
-  if(!el) return;
-  const r = await obtenerTCBnaVenta(fechaLocalISO(), !!forzar);
-  if(r){
-    el.textContent = `💵 BNA venta ${_fechaAR(r.fechaCotiz).slice(0,5)}: $ ${fmt2(r.venta)}`;
-    el.style.background = 'rgba(255,255,255,0.15)';
-  } else {
-    el.textContent = '💵 BNA: sin datos';
-    el.style.background = 'rgba(220,38,38,0.6)';
-  }
-}
-window.actualizarTopbarTC = actualizarTopbarTC;
-
-// ── IMPRESO en operaciones MIC pre-cargadas (mismo criterio desde el listado y desde Editar) ──
-//  · TILDAR  → la fecha que figura pasa a ser la de HOY (fecha de impreso; la de carga queda
-//              en fechaCarga) y el TC pasa al dólar BNA venta de HOY (el de carga queda en tcCarga).
-//  · DESTILDAR → vuelven la fecha y el TC de la carga.
-// Devuelve { ok, tcHoy }. ok=false si no se pudo traer el dólar (no se debe tildar).
-async function ajustarFechaTcPorImpreso(o, checked){
-  const hoy = fechaLocalISO();
-  const esMicOp = (o.tipo === 'MIC' || o.modo === 'ata') && !o.esTarifaPesos;
-  if(!esMicOp) return { ok: true, tcHoy: null };
-  if(checked){
-    toast('⏳ Buscando dólar oficial BNA de hoy...');
-    const r = await obtenerTCBnaVenta(hoy, true);
-    if(!r){
-      toast('⚠️ No se pudo traer el dólar BNA de hoy: no se tildó Impreso. Probá de nuevo.', true);
-      return { ok: false, tcHoy: null };
-    }
-    ajusteImpreso = { fechaImpreso: hoy, tcCarga: String(o.tcCarga || o.opTcInput || o.tc || '') };
-    document.getElementById('op_fecha').value = hoy;
-    document.getElementById('op_tc').value = r.venta;
-    _tcAutoAplicado = false; setTcHint('');
-    return { ok: true, tcHoy: r };
-  }
-  if(o.fechaImpreso){                      // ya estaba impresa: volver a los datos de la carga
-    ajusteImpreso = { fechaImpreso: '', tcCarga: '' };
-    document.getElementById('op_fecha').value = o.fechaCarga || o.fecha;
-    if(o.tcCarga) document.getElementById('op_tc').value = o.tcCarga;
-  } else if(ajusteImpreso){                // se tildó y se destildó en el mismo formulario: deshacer
-    ajusteImpreso = null;
-    document.getElementById('op_fecha').value = o.fecha || fechaLocalISO();
-    document.getElementById('op_tc').value = o.opTcInput || (o.tc || '');
-  }
-  return { ok: true, tcHoy: null };
-}
-
-// Tilde de Impreso dentro del formulario, editando una operación ya cargada
-document.getElementById('chk_impreso').addEventListener('change', async function(ev){
-  if(!ev.isTrusted || !editingId) return;          // solo clicks del usuario sobre una operación en edición
-  const idEd = editingId;
-  const o = misCargasCache.find(x => x.id === idEd);
-  if(!o) return;
-  const chk = this, checked = chk.checked;
-  const aj = await ajustarFechaTcPorImpreso(o, checked);
-  if(editingId !== idEd) return;                   // canceló/cambió la edición mientras esperaba
-  if(!aj.ok){
-    chk.checked = !checked;
-    chk.closest('.chk-item')?.classList.toggle('checked', chk.checked);
-    return;
-  }
-  if(aj.tcHoy) toast(`🖨️ Impreso — fecha y TC pasan a hoy (${_fechaAR(fechaLocalISO())}) · BNA $ ${fmt2(aj.tcHoy.venta)}. Guardá para confirmar.`);
-});
-actualizarTopbarTC();
-setInterval(() => actualizarTopbarTC(true), 10 * 60 * 1000);
-
 // ── Listas de despachantes / clientes finales (solo nombres, sin datos de plata) ──
 let clientes = []; // corresponsales_clientes: {nombre, tipo, factura, tieneFactura, cuit}
-onSnapshot(collection(db,'corresponsales_clientes'), snap => {
-  clientes = snap.docs.map(d => ({id:d.id, ...d.data()}));
+
+// Estas listas casi no cambian: se leen una vez y se guardan 12 horas en el navegador
+// (refrescar la página no vuelve a leerlas). Si falla la lectura, se usa lo último guardado.
+const _CACHE_LISTAS_MS = 12 * 60 * 60 * 1000;
+function _lsRaw(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } }
+function _lsSet(k, data, ts){ try { localStorage.setItem(k, JSON.stringify({ ts: ts || Date.now(), data })); } catch(e){} }
+async function leerColeccionCacheada(nombre, forzar){
+  const k = 'gc_cache_' + nombre;
+  const raw = _lsRaw(k);
+  if(!forzar && raw && Date.now() - raw.ts < _CACHE_LISTAS_MS) return raw.data;
+  try {
+    const snap = await getDocs(collection(db, nombre));
+    const data = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+    _lsSet(k, data);
+    return data;
+  } catch(e){
+    console.warn('Error leyendo ' + nombre + ':', e);
+    return raw ? raw.data : [];
+  }
+}
+function renderDespachantes(){
   const dl = document.getElementById('dl_despachantes');
   dl.innerHTML = [...new Set(clientes.map(c=>c.nombre))].sort().map(n => `<option value="${n}">`).join('');
-});
-onSnapshot(collection(db,'corresponsales_clientes_finales'), snap => {
-  const nombres = snap.docs.map(d => d.data().nombre).filter(Boolean).sort();
+}
+function renderClientesFinales(lista){
+  const nombres = lista.map(d => d.nombre).filter(Boolean).sort();
   document.getElementById('dl_clientes').innerHTML = nombres.map(n => `<option value="${n}">`).join('');
-});
+}
+// Cliente final nuevo: se suma a la lista guardada sin releer nada
+function agregarClienteFinalLocal(nombre){
+  if(!nombre) return;
+  const k = 'gc_cache_corresponsales_clientes_finales';
+  const raw = _lsRaw(k);
+  const lista = raw && raw.data ? raw.data : [];
+  if(!lista.some(x => x.nombre === nombre)){
+    lista.push({ id: nombre.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,''), nombre });
+    _lsSet(k, lista, raw ? raw.ts : Date.now());
+  }
+  renderClientesFinales(lista);
+}
+let _ultRefreshClientes = 0;
+(async () => {
+  clientes = await leerColeccionCacheada('corresponsales_clientes');
+  renderDespachantes();
+  renderClientesFinales(await leerColeccionCacheada('corresponsales_clientes_finales'));
+})();
 
 // ── Estado derivado del despachante elegido (tipo de tarifa) ──
 let tipoDespGlobalActual = 'despachante';
@@ -914,6 +777,11 @@ window.onCambiarDespachante = function(){
     return;
   }
   const cli = clientes.find(c => c.nombre === nombre);
+  if(!cli && nombre && Date.now() - _ultRefreshClientes > 10*60*1000){
+    // Puede ser un despachante nuevo que la lista guardada todavía no tiene: se relee una vez
+    _ultRefreshClientes = Date.now();
+    leerColeccionCacheada('corresponsales_clientes', true).then(l => { clientes = l; renderDespachantes(); onCambiarDespachante(); });
+  }
   const tiposValidos = ['desp_externo','apoderado','kotinya','despachante_pesos'];
   if(cli){
     tipoDespGlobalActual = tiposValidos.includes(cli.tipo) ? cli.tipo : 'despachante';
@@ -992,16 +860,6 @@ function actualizarVisibilidad(){
   const tcGroup = document.getElementById('tc-group');
   if(tcGroup) tcGroup.style.display = esPesos ? 'none' : '';
   else console.warn('Falta el elemento con id="tc-group" en el HTML');
-
-  // En modo Despachante el TC es el de la fecha de oficialización (lo carga el usuario):
-  // si había uno puesto automáticamente por el sistema (venido de ATA), se borra.
-  if(!(esAta && esMIC) && _tcAutoAplicado){
-    _tcReqSeq++;
-    document.getElementById('op_tc').value = '';
-    _tcAutoAplicado = false;
-    setTcHint('');
-  }
-  aplicarTCBnaSiMIC();   // solo ATA + MIC → completa el TC con el dólar BNA venta
 }
 actualizarOpcionesTipo();
 actualizarVisibilidad();
@@ -1017,8 +875,10 @@ document.querySelectorAll('.chk-item input[type=checkbox]').forEach(c => {
 
 // ── Tarifas: se leen de Firestore (config/tarifas_operaciones) pero NUNCA se muestran ──
 let tarifasConfig = {};
+let tarifasCargadas = false;
 onSnapshot(doc(db,'config','tarifas_operaciones'), snap => {
   tarifasConfig = snap.exists() ? snap.data() : {};
+  tarifasCargadas = true;
 }, err => {
   console.warn('Error leyendo config/tarifas_operaciones (revisá las reglas de Firestore):', err);
 });
@@ -1209,26 +1069,16 @@ window.guardarOperacion = async function(){
       ramiroOPagado: 'no'
     };
 
-    // Fecha de carga original / fecha de impreso / TC original de la carga
-    // (op.fecha pasa a ser la de impreso cuando se tilda Impreso desde el listado)
-    const _orig = editingId ? (misCargasCache.find(x => x.id === editingId) || {}) : {};
-    op.fechaCarga   = _orig.fechaCarga || _orig.fecha || op.fecha;
-    op.fechaImpreso = _orig.fechaImpreso || '';
-    op.tcCarga      = _orig.tcCarga || '';
-    if(ajusteImpreso){ op.fechaImpreso = ajusteImpreso.fechaImpreso; op.tcCarga = ajusteImpreso.tcCarga; }
-
     if(editingId){
       const original2 = misCargasCache.find(x => x.id === editingId) || {};
-      op.numOp = original2.numOp;
       op.ts = original2.ts;
       op.cargadoPor = original2.cargadoPor || currentUser.username;
       op.editadoPor = currentUser.username;
       op.editadoTs = Date.now();
-      await setDoc(doc(db,'despachantees_ops', editingId), op);
+      // merge: no borra campos que cargó el sistema principal (número de operación, factura, etc.)
+      await setDoc(doc(db,'despachantees_ops', editingId), op, { merge: true });
     } else {
-      const anioActual = new Date().getFullYear();
-      const cnt = await getCountFromServer(query(collection(db,'despachantees_ops'), where('fecha','>=', anioActual+'-01-01')));
-      op.numOp = cnt.data().count + 1;
+      // Sin número de operación: lo asigna operaciones.html (así acá no hace falta leer nada para guardar)
       op.cargadoPor = currentUser.username;
       op.ts = Date.now();
       await addDoc(collection(db,'despachantees_ops'), op);
@@ -1238,6 +1088,7 @@ window.guardarOperacion = async function(){
     if(cliente){
       const id = cliente.replace(/\s+/g,'_').replace(/[^a-zA-Z0-9_]/g,'');
       setDoc(doc(db,'corresponsales_clientes_finales', id), { nombre: cliente }, { merge: true }).catch(()=>{});
+      agregarClienteFinalLocal(cliente);
     }
 
     if(editingId){
@@ -1265,7 +1116,6 @@ function limpiarFormulario(){
   document.getElementById('op_toma').value = '';
   document.getElementById('op_obs').value = '';
   document.getElementById('op_tc').value = '';
-  _tcAutoAplicado = false; setTcHint(''); ajusteImpreso = null;
   document.getElementById('op_adicionales_pesos').value = '0';
   document.getElementById('op_adicionales_usd').value = '0';
   document.getElementById('op_tipo').value = 'EXPO';
